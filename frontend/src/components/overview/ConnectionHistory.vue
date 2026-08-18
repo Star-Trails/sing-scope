@@ -36,7 +36,6 @@
             <option :value="ConnectionHistoryType.Destination">
               {{ $t('aggregateByDestination') }}
             </option>
-            <option :value="ConnectionHistoryType.Process">{{ $t('aggregateByProcess') }}</option>
             <option :value="ConnectionHistoryType.Outbound">
               {{ $t('aggregateByOutbound') }}
             </option>
@@ -267,14 +266,11 @@ const totalStats = computed(() => {
 })
 
 const aggregateSourceCount = computed(() => aggregatedData.value.length)
-
 const aggregateSourceLabel = computed(() => {
   if (aggregationType.value === ConnectionHistoryType.SourceIP) {
     return t('sourceIP')
   } else if (aggregationType.value === ConnectionHistoryType.Destination) {
     return t('host')
-  } else if (aggregationType.value === ConnectionHistoryType.Process) {
-    return t('process')
   } else if (aggregationType.value === ConnectionHistoryType.ProxyGroup) {
     return t('proxyGroup')
   } else {
@@ -292,14 +288,11 @@ const columns = computed<ColumnDef<ConnectionHistoryData>[]>(() => {
         return getIPLabelFromMap(row.original.key)
       } else if (aggregationType.value === ConnectionHistoryType.Destination) {
         return row.original.key
-      } else if (aggregationType.value === ConnectionHistoryType.Process) {
-        return row.original.key
       } else {
         return h(ProxyName, { name: row.original.key })
       }
     },
   }
-
   return [
     keyColumn,
     {

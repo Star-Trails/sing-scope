@@ -21,7 +21,6 @@ const uuid = () => activeBackend.value?.uuid || ''
 const allHistoryTypes: ConnectionHistoryType[] = [
   ConnectionHistoryType.SourceIP,
   ConnectionHistoryType.Destination,
-  ConnectionHistoryType.Process,
   ConnectionHistoryType.Outbound,
   ConnectionHistoryType.ProxyGroup,
 ]
@@ -33,7 +32,6 @@ type AggregationMaps = Record<ConnectionHistoryType, Map<string, ConnectionHisto
 const createAggregationMaps = (): AggregationMaps => ({
   [ConnectionHistoryType.SourceIP]: new Map<string, ConnectionHistoryData>(),
   [ConnectionHistoryType.Destination]: new Map<string, ConnectionHistoryData>(),
-  [ConnectionHistoryType.Process]: new Map<string, ConnectionHistoryData>(),
   [ConnectionHistoryType.Outbound]: new Map<string, ConnectionHistoryData>(),
   [ConnectionHistoryType.ProxyGroup]: new Map<string, ConnectionHistoryData>(),
 })
@@ -43,7 +41,6 @@ let aggMaps = createAggregationMaps()
 const emptyView = (): Record<ConnectionHistoryType, ConnectionHistoryData[]> => ({
   [ConnectionHistoryType.SourceIP]: [],
   [ConnectionHistoryType.Destination]: [],
-  [ConnectionHistoryType.Process]: [],
   [ConnectionHistoryType.Outbound]: [],
   [ConnectionHistoryType.ProxyGroup]: [],
 })
@@ -346,8 +343,6 @@ export const aggregateConnections = (
       } else {
         key = hostkey.split('.').slice(-2).join('.')
       }
-    } else if (type === ConnectionHistoryType.Process) {
-      key = '-'
     } else if (type === ConnectionHistoryType.Outbound) {
       key = getConnectionChains(connection)[0] || '-'
     } else if (type === ConnectionHistoryType.ProxyGroup) {

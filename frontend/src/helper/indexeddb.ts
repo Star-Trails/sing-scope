@@ -147,7 +147,6 @@ export interface ConnectionHistoryData {
 export enum ConnectionHistoryType {
   SourceIP = 'sourceIP',
   Destination = 'destination',
-  Process = 'process',
   Outbound = 'outbound',
   ProxyGroup = 'proxyGroup',
 }
