@@ -77,12 +77,24 @@ import { LIST_DISPLAY_STYLE, RULE_TAB_TYPE } from '@/constant'
 import { fetchRules, renderRules, renderRulesProvider, rules, rulesTabShow } from '@/assembly/rules'
 import { ruleDisplayStyle } from '@/store/settings'
 import type { Rule } from '@/types'
-import { computed, provide, ref } from 'vue'
-
-fetchRules()
+import { computed, onMounted, onUnmounted, provide, ref } from 'vue'
 
 const expandedRule = ref<string | null>(null)
 provide('expandedRule', expandedRule)
+
+let timer: number | null = null
+
+onMounted(async () => {
+  await fetchRules()
+  timer = window.setInterval(fetchRules, 2000)
+})
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer)
+    timer = null
+  }
+})
 
 const isRuleTable = computed(() => ruleDisplayStyle.value === LIST_DISPLAY_STYLE.TABLE)
 const cardPadding = usePaddingForViews({
