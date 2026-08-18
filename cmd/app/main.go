@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"io/fs"
 	"log"
 
 	"sing-scope/internal/app"
@@ -10,17 +11,24 @@ import (
 )
 
 //go:embed all:frontend_dist
-var assets embed.FS
+var rawAssets embed.FS
 
 func main() {
 	appService := app.NewAppService()
 	defer appService.Close()
 
+	assetsSubFS, err := fs.Sub(rawAssets, "frontend_dist")
+	if err != nil {
+		log.Fatalf("failed to open frontend assets: %v", err)
+	}
+
+	handler := app.NewAssetHandler(appService, assetsSubFS)
+
 	wailsApp := application.New(application.Options{
 		Name:        "sing-scope",
 		Description: "Cross-Platform sing-box Traffic Analyzer",
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
+			Handler: handler,
 		},
 		Services: []application.Service{
 			application.NewService(appService),
@@ -35,8 +43,7 @@ func main() {
 		MinHeight: 600,
 	})
 
-	err := wailsApp.Run()
-	if err != nil {
+	if err := wailsApp.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

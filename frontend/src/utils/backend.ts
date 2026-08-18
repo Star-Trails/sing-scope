@@ -24,42 +24,35 @@ export interface QueryOptions {
   sortDesc?: boolean
 }
 
-async function callGoMethod<T>(method: string, ...args: unknown[]): Promise<T | null> {
-  const win = window as any
-
-  if (win.go?.app?.AppService?.[method]) {
-    try {
-      return (await win.go.app.AppService[method](...args)) as T
-    } catch (e) {
-      console.warn(`[Wails IPC] AppService.${method} failed:`, e)
-    }
+async function apiPost<T>(endpoint: string, body?: unknown): Promise<T | null> {
+  try {
+    const res = await fetch(`/api/${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+    if (!res.ok) return null
+    return (await res.json()) as T
+  } catch {
+    return null
   }
+}
 
-  if (win.wails?.services?.AppService?.[method]) {
-    try {
-      return (await win.wails.services.AppService[method](...args)) as T
-    } catch (e) {
-      console.warn(`[Wails v3] AppService.${method} failed:`, e)
-    }
+async function apiGet<T>(endpoint: string): Promise<T | null> {
+  try {
+    const res = await fetch(`/api/${endpoint}`, {
+      method: 'GET',
+    })
+    if (!res.ok) return null
+    return (await res.json()) as T
+  } catch {
+    return null
   }
-
-  if (typeof win.wails?.Call === 'function') {
-    try {
-      return (await win.wails.Call({
-        methodName: `sing-scope/internal/app.AppService.${method}`,
-        args,
-      })) as T
-    } catch (e) {
-      console.warn(`[Wails v3 Call] Failed:`, e)
-    }
-  }
-
-  return null
 }
 
 export const Backend = {
   async getConnectionInfo(): Promise<ServerConnectionInfo> {
-    const res = await callGoMethod<ServerConnectionInfo>('GetConnectionInfo')
+    const res = await apiGet<ServerConnectionInfo>('connection')
     return res || {
       state: 'Connected',
       serverUrl: 'http://127.0.0.1:9090',
@@ -69,17 +62,17 @@ export const Backend = {
   },
 
   async connect(url: string, secret: string): Promise<boolean> {
-    const res = await callGoMethod<boolean>('ConnectServer', url, secret)
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>('connect', { url, secret })
+    return res?.ok ?? true
   },
 
   async disconnect(): Promise<boolean> {
-    const res = await callGoMethod<boolean>('DisconnectServer')
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>('disconnect')
+    return res?.ok ?? true
   },
 
   async getOverviewSummary(inboundFilter = ''): Promise<OverviewSummary> {
-    const res = await callGoMethod<OverviewSummary>('GetOverviewSummary', inboundFilter)
+    const res = await apiGet<OverviewSummary>(`overview?filter=${encodeURIComponent(inboundFilter)}`)
     return res || {
       uploadRate: 0,
       downloadRate: 0,
@@ -94,12 +87,12 @@ export const Backend = {
   },
 
   async getFlows(opts: QueryOptions): Promise<{ flows: Flow[]; totalCount: number }> {
-    const res = await callGoMethod<{ flows: Flow[]; totalCount: number }>('GetFlows', opts)
+    const res = await apiPost<{ flows: Flow[]; totalCount: number }>('flows', opts)
     return res || { flows: [], totalCount: 0 }
   },
 
   async getBatchAnalytics(inboundFilter = '', topN = 100): Promise<BatchAnalysisResult> {
-    const res = await callGoMethod<BatchAnalysisResult>('GetBatchAnalytics', inboundFilter, topN)
+    const res = await apiGet<BatchAnalysisResult>(`analytics?filter=${encodeURIComponent(inboundFilter)}&topN=${topN}`)
     return res || {
       totalFlows: 0,
       activeFlows: 0,
@@ -119,12 +112,12 @@ export const Backend = {
   },
 
   async getRules(): Promise<RuleInfo[]> {
-    const res = await callGoMethod<RuleInfo[]>('GetRules')
+    const res = await apiGet<RuleInfo[]>('rules')
     return res || []
   },
 
   async getSystemStatus(): Promise<SystemStatus> {
-    const res = await callGoMethod<SystemStatus>('GetSystemStatus')
+    const res = await apiGet<SystemStatus>('status')
     return res || {
       memory: 0,
       goroutines: 0,
@@ -140,52 +133,52 @@ export const Backend = {
   },
 
   async getLogs(limit = 100): Promise<LogMessage[]> {
-    const res = await callGoMethod<LogMessage[]>('GetLogs', limit)
+    const res = await apiGet<LogMessage[]>(`logs?limit=${limit}`)
     return res || []
   },
 
   async clearLogs(): Promise<boolean> {
-    const res = await callGoMethod<boolean>('ClearLogs')
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>('clear-logs')
+    return res ? res.ok : true
   },
 
   async getGroups(): Promise<OutboundGroup[]> {
-    const res = await callGoMethod<OutboundGroup[]>('GetGroups')
+    const res = await apiGet<OutboundGroup[]>('groups')
     return res || []
   },
 
   async closeConnection(id: string): Promise<boolean> {
-    const res = await callGoMethod<boolean>('CloseConnection', id)
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>(`close?id=${encodeURIComponent(id)}`)
+    return res ? res.ok : true
   },
 
   async closeAllConnections(): Promise<boolean> {
-    const res = await callGoMethod<boolean>('CloseAllConnections')
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>('close-all')
+    return res ? res.ok : true
   },
 
   async selectOutbound(groupTag: string, outboundTag: string): Promise<boolean> {
-    const res = await callGoMethod<boolean>('SelectOutbound', groupTag, outboundTag)
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>('select-outbound', { groupTag, outboundTag })
+    return res ? res.ok : true
   },
 
   async urlTest(outboundTag: string): Promise<boolean> {
-    const res = await callGoMethod<boolean>('URLTest', outboundTag)
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>(`url-test?tag=${encodeURIComponent(outboundTag)}`)
+    return res ? res.ok : true
   },
 
   async getClashModeStatus(): Promise<{ currentMode: string; modeList: string[] }> {
-    const res = await callGoMethod<{ currentMode: string; modeList: string[] }>('GetClashModeStatus')
+    const res = await apiGet<{ currentMode: string; modeList: string[] }>('clash-mode')
     return res || { currentMode: 'rule', modeList: ['rule', 'global', 'direct'] }
   },
 
   async setClashMode(mode: string): Promise<boolean> {
-    const res = await callGoMethod<boolean>('SetClashMode', mode)
-    return res ?? true
+    const res = await apiPost<{ ok: boolean }>('set-clash-mode', { mode })
+    return res ? res.ok : true
   },
 
   async getStartedAt(): Promise<number> {
-    const res = await callGoMethod<number>('GetStartedAt')
-    return res || 0
+    const res = await apiGet<{ startedAt: number }>('started-at')
+    return res?.startedAt || 0
   },
 }
