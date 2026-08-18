@@ -183,15 +183,15 @@ const defaultOverviewCardOrder: { card: OVERVIEW_CARD; visible: boolean }[] = [
     visible: true,
   },
   {
+    card: OVERVIEW_CARD.OverviewPieDistributionCard,
+    visible: true,
+  },
+  {
     card: OVERVIEW_CARD.TopologyCharts,
     visible: true,
   },
   {
     card: OVERVIEW_CARD.NetworkCard,
-    visible: true,
-  },
-  {
-    card: OVERVIEW_CARD.RuleHitCountCard,
     visible: true,
   },
   {
@@ -203,6 +203,10 @@ const defaultOverviewCardOrder: { card: OVERVIEW_CARD; visible: boolean }[] = [
     visible: true,
   },
   {
+    card: OVERVIEW_CARD.RuleHitCountCard,
+    visible: true,
+  },
+  {
     card: OVERVIEW_CARD.EarthGlobeCard,
     visible: false,
   },
@@ -211,8 +215,6 @@ export const overviewCardOrder = useStorage<{ card: OVERVIEW_CARD; visible: bool
   'config/overview-card-order',
   defaultOverviewCardOrder,
 )
-// 确保所有卡片都在配置中。存量配置首次补入全球连接时放在连接拓扑前；
-// 其他缺失卡片仍追加到末尾，已有全球连接的自定义顺序不改。
 const allCardTypes = Object.values(OVERVIEW_CARD)
 const existingCardTypes = new Set(overviewCardOrder.value.map((item) => item.card))
 const missingCards = allCardTypes.filter((card) => !existingCardTypes.has(card))

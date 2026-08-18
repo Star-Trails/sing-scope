@@ -322,12 +322,13 @@ export enum SETTINGS_MENU_KEY {
 
 export enum OVERVIEW_CARD {
   ChartsCard = 'ChartsCard',
-  NetworkCard = 'NetworkCard',
-  ProviderTrafficOverview = 'ProviderTrafficOverview',
+  OverviewPieDistributionCard = 'OverviewPieDistributionCard',
   TopologyCharts = 'TopologyCharts',
-  EarthGlobeCard = 'EarthGlobeCard',
+  NetworkCard = 'NetworkCard',
   ConnectionHistory = 'ConnectionHistory',
+  ProviderTrafficOverview = 'ProviderTrafficOverview',
   RuleHitCountCard = 'RuleHitCountCard',
+  EarthGlobeCard = 'EarthGlobeCard',
 }
 
 export enum MIHOMO {

@@ -58,6 +58,7 @@
         "outbound": "direct"
       }
     ],
+    "find_process": true,
     "auto_detect_interface": true
   }
 }
