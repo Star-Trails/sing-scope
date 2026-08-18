@@ -37,7 +37,6 @@ export enum EMOJIS {
 export enum CONNECTIONS_TABLE_ACCESSOR_KEY {
   Close = 'close',
   Type = 'type',
-  Process = 'process',
   Host = 'host',
   Rule = 'rule',
   Chains = 'chains',
@@ -125,7 +124,6 @@ export enum SORT_DIRECTION {
 
 export enum SORT_TYPE {
   HOST = 'host',
-  PROCESS = 'process',
   CHAINS = 'chains',
   RULE = 'rule',
   TYPE = 'type',
@@ -225,7 +223,6 @@ export const SIMPLE_CARD_STYLE = [
 export const DETAILED_CARD_STYLE = [
   [CONNECTIONS_TABLE_ACCESSOR_KEY.Host, CONNECTIONS_TABLE_ACCESSOR_KEY.ConnectTime],
   [
-    CONNECTIONS_TABLE_ACCESSOR_KEY.Process,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Type,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Download,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Upload,

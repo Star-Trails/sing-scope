@@ -26,7 +26,6 @@ export const connectionAccessor: ConnectionAccessor = {
   networkType: () => '',
   hostname: () => '',
   host: () => '',
-  process: () => '',
   destination: () => '',
   inboundUser: () => '',
   sniffHost: () => '',

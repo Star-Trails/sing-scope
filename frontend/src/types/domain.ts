@@ -1,12 +1,3 @@
-export interface ProcessInfo {
-  processId: number
-  userId: number
-  userName: string
-  processPath: string
-  processName: string
-  packageNames?: string[]
-}
-
 export interface Flow {
   id: string
   inbound: string
@@ -23,7 +14,6 @@ export interface Flow {
   outbound: string
   outboundType: string
   chainList?: string[]
-  process?: ProcessInfo
   createdAt: string
   closedAt?: string
   uploadTotal: number
@@ -58,21 +48,6 @@ export interface NamedAggregate {
   lastActiveAt?: number
 }
 
-export interface ProcessAggregate {
-  processName: string
-  processPath: string
-  processId: number
-  connectionCount: number
-  activeCount: number
-  uploadTotal: number
-  downloadTotal: number
-  totalBytes: number
-  uploadRate: number
-  downloadRate: number
-  topDomains: NamedAggregate[]
-  topDestinations: NamedAggregate[]
-}
-
 export interface OverviewSummary {
   uploadRate: number
   downloadRate: number
@@ -82,7 +57,6 @@ export interface OverviewSummary {
   activeTotalFlows: number
   tcpCount: number
   udpCount: number
-  topProcess?: NamedAggregate
   topDomain?: NamedAggregate
   topDestination?: NamedAggregate
   topOutbound?: NamedAggregate
@@ -168,7 +142,6 @@ export interface BatchAnalysisResult {
   totalDownloadBytes: number
   totalUploadRate: number
   totalDownloadRate: number
-  byProcess: ProcessAggregate[]
   byDomain: NamedAggregate[]
   byDestination: NamedAggregate[]
   byOutbound: NamedAggregate[]

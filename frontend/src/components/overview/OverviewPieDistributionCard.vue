@@ -7,57 +7,14 @@
           {{ $t('trafficAndRuleDistribution') }}
         </span>
       </div>
-      <div class="flex items-center space-x-2">
-        <span class="badge badge-neutral badge-xs font-mono text-[10px]">
-          find_process: ON
-        </span>
+      <div class="text-[11px] font-mono text-base-content/50">
+        {{ destData.length }} {{ $t('destinations') }}
       </div>
     </div>
 
-    <!-- Three Side-by-Side Pie Charts Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <!-- 1. Process Traffic Distribution Pie -->
-      <div class="p-3 zash-card-flat bg-base-200/50 flex flex-col justify-between space-y-2">
-        <div class="flex items-center justify-between border-b border-base-content/10 pb-1.5">
-          <span class="text-xs font-bold text-base-content flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-primary" />
-            {{ $t('byProcess') }}
-          </span>
-          <span class="text-[10px] font-mono text-base-content/60 font-semibold">
-            {{ formatBytes(totalProcessBytes) }}
-          </span>
-        </div>
-
-        <div class="h-44 w-full relative">
-          <div ref="processChartRef" class="w-full h-full" />
-          <div
-            v-if="processData.length === 0"
-            class="absolute inset-0 flex items-center justify-center text-base-content/40 text-xs italic"
-          >
-            {{ $t('noData') }}
-          </div>
-        </div>
-
-        <!-- Top 3 Process Items -->
-        <div class="space-y-1.5 pt-1 text-[11px] font-mono">
-          <div
-            v-for="(item, idx) in processData.slice(0, 3)"
-            :key="item.name"
-            class="flex items-center justify-between"
-          >
-            <div class="flex items-center space-x-1.5 truncate max-w-[65%]">
-              <span
-                class="w-2 h-2 rounded-full flex-shrink-0"
-                :style="{ backgroundColor: palette[idx % palette.length] }"
-              />
-              <span class="truncate text-base-content/80 font-medium" :title="item.name">{{ item.name }}</span>
-            </div>
-            <span class="text-base-content font-bold tabular-nums">{{ formatBytes(item.value) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. Destination Traffic Distribution Pie -->
+    <!-- 2-Column Responsive Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- 1. Destination Traffic Distribution Pie -->
       <div class="p-3 zash-card-flat bg-base-200/50 flex flex-col justify-between space-y-2">
         <div class="flex items-center justify-between border-b border-base-content/10 pb-1.5">
           <span class="text-xs font-bold text-base-content flex items-center gap-1.5">
@@ -98,11 +55,11 @@
         </div>
       </div>
 
-      <!-- 3. Rule Hit Statistics Pie -->
+      <!-- 2. Rule Match / Hit Distribution Pie -->
       <div class="p-3 zash-card-flat bg-base-200/50 flex flex-col justify-between space-y-2">
         <div class="flex items-center justify-between border-b border-base-content/10 pb-1.5">
           <span class="text-xs font-bold text-base-content flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-info" />
+            <span class="w-2 h-2 rounded-full bg-warning" />
             {{ $t('ruleHitDistribution') }}
           </span>
           <span class="text-[10px] font-mono text-base-content/60 font-semibold">
@@ -153,20 +110,16 @@ interface PieItem {
   value: number
 }
 
-const processChartRef = ref<HTMLDivElement | null>(null)
 const destChartRef = ref<HTMLDivElement | null>(null)
 const ruleChartRef = ref<HTMLDivElement | null>(null)
 
-let processChart: echarts.ECharts | null = null
 let destChart: echarts.ECharts | null = null
 let ruleChart: echarts.ECharts | null = null
 let timer: number | null = null
 
-const processData = ref<PieItem[]>([])
 const destData = ref<PieItem[]>([])
 const ruleData = ref<PieItem[]>([])
 
-const totalProcessBytes = computed(() => processData.value.reduce((a, b) => a + b.value, 0))
 const totalDestBytes = computed(() => destData.value.reduce((a, b) => a + b.value, 0))
 const totalRuleHits = computed(() => ruleData.value.reduce((a, b) => a + b.value, 0))
 
@@ -191,15 +144,6 @@ async function fetchData() {
     ])
 
     if (analytics) {
-      if (analytics.byProcess && analytics.byProcess.length > 0) {
-        const valid = analytics.byProcess.filter((p) => p.processName && p.processName !== 'Unknown')
-        processData.value = valid.map((p) => ({
-          name: p.processName,
-          value: p.totalBytes || p.uploadTotal + p.downloadTotal,
-        }))
-      } else {
-        processData.value = []
-      }
       if (analytics.byDomain && analytics.byDomain.length > 0) {
         destData.value = analytics.byDomain.map((d) => ({
           name: d.name,
@@ -263,67 +207,71 @@ function buildOption(data: PieItem[], isBytes = true, colorOffset = 0): echarts.
           borderColor: isDark ? '#1c1c1e' : '#ffffff',
           borderWidth: 2,
         },
-        label: { show: false },
+        label: {
+          show: false,
+        },
         emphasis: {
           scale: true,
-          scaleSize: 5,
+          scaleSize: 6,
           label: {
-            show: true,
-            fontSize: 11,
-            fontWeight: 'bold',
-            formatter: '{b}',
-            color: isDark ? '#f5f5f7' : '#1d1d1f',
+            show: false,
           },
         },
-        color: colors,
-        data,
+        data: data.slice(0, 7).map((item, idx) => ({
+          name: item.name,
+          value: item.value,
+          itemStyle: {
+            color: colors[idx % colors.length],
+          },
+        })),
       },
     ],
   }
 }
 
 function updateCharts() {
-  if (processChart && processData.value.length > 0) {
-    processChart.setOption(buildOption(processData.value, true, 0))
-  }
-  if (destChart && destData.value.length > 0) {
+  if (destChart && destChartRef.value) {
     destChart.setOption(buildOption(destData.value, true, 2))
   }
-  if (ruleChart && ruleData.value.length > 0) {
+  if (ruleChart && ruleChartRef.value) {
     ruleChart.setOption(buildOption(ruleData.value, false, 4))
   }
 }
 
-onMounted(async () => {
-  if (processChartRef.value) processChart = echarts.init(processChartRef.value)
-  if (destChartRef.value) destChart = echarts.init(destChartRef.value)
-  if (ruleChartRef.value) ruleChart = echarts.init(ruleChartRef.value)
+function handleResize() {
+  destChart?.resize()
+  ruleChart?.resize()
+}
 
-  window.addEventListener('resize', handleResize)
+onMounted(async () => {
+  if (destChartRef.value) {
+    destChart = echarts.init(destChartRef.value)
+  }
+  if (ruleChartRef.value) {
+    ruleChart = echarts.init(ruleChartRef.value)
+  }
 
   await fetchData()
   updateCharts()
 
+  window.addEventListener('resize', handleResize)
   timer = window.setInterval(async () => {
     await fetchData()
     updateCharts()
   }, 2000)
 })
 
-function handleResize() {
-  processChart?.resize()
-  destChart?.resize()
-  ruleChart?.resize()
-}
-
 onUnmounted(() => {
-  if (timer) {
-    clearInterval(timer)
-    timer = null
-  }
+  clearInterval(timer!)
   window.removeEventListener('resize', handleResize)
-  processChart?.dispose()
   destChart?.dispose()
   ruleChart?.dispose()
 })
 </script>
+
+<style scoped>
+.zash-card-flat {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-base-content, rgba(0, 0, 0, 0.08));
+}
+</style>

@@ -229,7 +229,7 @@ const availableTabs = computed<TabType[]>(() =>
 const sectionDefs: { id: string; keys: CONNECTIONS_TABLE_ACCESSOR_KEY[] }[] = [
   {
     id: 'basic',
-    keys: [KEY.Type, KEY.ConnectTime, KEY.Rule, KEY.Process, KEY.InboundUser, KEY.Protocol],
+    keys: [KEY.Type, KEY.ConnectTime, KEY.Rule, KEY.InboundUser, KEY.Protocol],
   },
   {
     id: 'sourceAndDestination',

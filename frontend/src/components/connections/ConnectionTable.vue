@@ -278,15 +278,6 @@ import { computed, h, ref, type VNode } from 'vue'
 import { useI18n } from 'vue-i18n'
 import HighlightText from '../common/HighlightText.vue'
 import ProxyName from '../proxies/ProxyName.vue'
-// Ensure Process column is present in connectionTableColumns even with legacy cached localStorage
-if (!connectionTableColumns.value.includes(CONNECTIONS_TABLE_ACCESSOR_KEY.Process)) {
-  const hostIdx = connectionTableColumns.value.indexOf(CONNECTIONS_TABLE_ACCESSOR_KEY.Host)
-  if (hostIdx !== -1) {
-    connectionTableColumns.value.splice(hostIdx, 0, CONNECTIONS_TABLE_ACCESSOR_KEY.Process)
-  } else {
-    connectionTableColumns.value.unshift(CONNECTIONS_TABLE_ACCESSOR_KEY.Process)
-  }
-}
 
 const { handlerInfo } = useConnections()
 const columnWidthMap = useStorage('config/table-column-width', {
@@ -300,7 +291,6 @@ const columnWidthMap = useStorage('config/table-column-width', {
   [CONNECTIONS_TABLE_ACCESSOR_KEY.UlSpeed]: 80,
   [CONNECTIONS_TABLE_ACCESSOR_KEY.Outbound]: 80,
   [CONNECTIONS_TABLE_ACCESSOR_KEY.Type]: 150,
-  [CONNECTIONS_TABLE_ACCESSOR_KEY.Process]: 150,
   [CONNECTIONS_TABLE_ACCESSOR_KEY.SourceIP]: 150,
   [CONNECTIONS_TABLE_ACCESSOR_KEY.SourcePort]: 100,
   [CONNECTIONS_TABLE_ACCESSOR_KEY.SniffHost]: 200,
@@ -387,13 +377,6 @@ const columns: ColumnDef<Connection>[] = [
     id: CONNECTIONS_TABLE_ACCESSOR_KEY.Type,
     accessorFn: (original) => getTableDisplayValue(original, CONNECTIONS_TABLE_ACCESSOR_KEY.Type),
     cell: highlightedCell(CONNECTIONS_TABLE_ACCESSOR_KEY.Type),
-  },
-  {
-    header: () => t(CONNECTIONS_TABLE_ACCESSOR_KEY.Process),
-    id: CONNECTIONS_TABLE_ACCESSOR_KEY.Process,
-    accessorFn: (original) =>
-      getTableDisplayValue(original, CONNECTIONS_TABLE_ACCESSOR_KEY.Process),
-    cell: highlightedCell(CONNECTIONS_TABLE_ACCESSOR_KEY.Process),
   },
   {
     header: () => t(CONNECTIONS_TABLE_ACCESSOR_KEY.Host),

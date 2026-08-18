@@ -2,23 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProcessInfoInput {
-    #[serde(default)]
-    pub process_id: u32,
-    #[serde(default)]
-    pub user_id: i32,
-    #[serde(default)]
-    pub user_name: String,
-    #[serde(default)]
-    pub process_path: String,
-    #[serde(default)]
-    pub process_name: String,
-    #[serde(default)]
-    pub package_names: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct FlowInput {
     pub id: String,
     #[serde(default)]
@@ -49,7 +32,6 @@ pub struct FlowInput {
     pub outbound_type: String,
     #[serde(default)]
     pub chain_list: Vec<String>,
-    pub process: Option<ProcessInfoInput>,
     #[serde(default)]
     pub upload_total: i64,
     #[serde(default)]
@@ -85,23 +67,6 @@ pub struct NamedAggregate {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ProcessAggregate {
-    pub process_name: String,
-    pub process_path: String,
-    pub process_id: u32,
-    pub connection_count: usize,
-    pub active_count: usize,
-    pub upload_total: i64,
-    pub download_total: i64,
-    pub total_bytes: i64,
-    pub upload_rate: f64,
-    pub download_rate: f64,
-    pub top_domains: Vec<NamedAggregate>,
-    pub top_destinations: Vec<NamedAggregate>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct BatchAnalysisRequest {
     pub flows: Vec<FlowInput>,
     #[serde(default = "default_top_n")]
@@ -123,7 +88,6 @@ pub struct BatchAnalysisResult {
     pub total_download_bytes: i64,
     pub total_upload_rate: f64,
     pub total_download_rate: f64,
-    pub by_process: Vec<ProcessAggregate>,
     pub by_domain: Vec<NamedAggregate>,
     pub by_destination: Vec<NamedAggregate>,
     pub by_outbound: Vec<NamedAggregate>,

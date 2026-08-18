@@ -45,7 +45,6 @@ export interface ConnectionAccessor {
   hostname(connection: Connection): string
   // 目的地 `host:port`(IPv6 加方括号),供展示。
   host(connection: Connection): string
-  process(connection: Connection): string
   destination(connection: Connection): string
   inboundUser(connection: Connection): string
   sniffHost(connection: Connection): string
@@ -94,8 +93,6 @@ export const createGetConnectionDisplayValue =
     switch (key) {
       case CONNECTIONS_TABLE_ACCESSOR_KEY.Type:
         return accessor.networkType(connection)
-      case CONNECTIONS_TABLE_ACCESSOR_KEY.Process:
-        return accessor.process(connection)
       case CONNECTIONS_TABLE_ACCESSOR_KEY.Host:
         return accessor.host(connection)
       case CONNECTIONS_TABLE_ACCESSOR_KEY.Rule:

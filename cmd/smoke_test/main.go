@@ -328,7 +328,6 @@ func main() {
 	})
 
 	testEndpoint(ts.URL+"/api/flows", "POST", map[string]any{"activeOnly": false, "limit": 50}, func(body []byte) {
-		assertContains(body, `chrome.exe`, "TUN Process Attribution (chrome.exe)")
 		assertContains(body, `cloudflare.com`, "Target Domain (cloudflare.com)")
 		assertContains(body, `HK 01`, "Outbound Tag (HK 01)")
 		assertContains(body, `geosite(category-games)`, "Matched Rule")
@@ -340,11 +339,11 @@ func main() {
 	})
 
 	testEndpoint(ts.URL+"/api/analytics?filter=tun:all&topN=10", "GET", nil, func(body []byte) {
-		assertContains(body, `"byProcess":`, "Analytics byProcess")
 		assertContains(body, `"byDomain":`, "Analytics byDomain")
+		assertContains(body, `"byDestination":`, "Analytics byDestination")
 		assertContains(body, `"byOutbound":`, "Analytics byOutbound")
+		assertContains(body, `"byRule":`, "Analytics byRule")
 	})
-
 	testEndpoint(ts.URL+"/api/groups", "GET", nil, func(body []byte) {
 		assertContains(body, `"tag":"Proxy"`, "Outbound Group Tag")
 		assertContains(body, `"HK 01"`, "Outbound Node HK 01")

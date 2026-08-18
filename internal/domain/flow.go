@@ -4,16 +4,6 @@ import (
 	"time"
 )
 
-// ProcessInfo contains operating-system level process metadata for a network flow.
-type ProcessInfo struct {
-	ProcessID    uint32   `json:"processId"`
-	UserID       int32    `json:"userId"`
-	UserName     string   `json:"userName"`
-	ProcessPath  string   `json:"processPath"`
-	ProcessName  string   `json:"processName"`
-	PackageNames []string `json:"packageNames"`
-}
-
 // Flow represents a normalized, authoritative network connection flow tracked by sing-box.
 type Flow struct {
 	ID string `json:"id"`
@@ -36,8 +26,6 @@ type Flow struct {
 	Outbound     string   `json:"outbound"`
 	OutboundType string   `json:"outboundType"`
 	ChainList    []string `json:"chainList"`
-
-	Process *ProcessInfo `json:"process,omitempty"`
 
 	CreatedAt time.Time  `json:"createdAt"`
 	ClosedAt  *time.Time `json:"closedAt,omitempty"`

@@ -76,9 +76,6 @@ export const getConnectionHostname = (connection: Connection) =>
 export const getHostFromConnection = (connection: Connection) =>
   connectionAccessor().host(connection)
 
-export const getProcessFromConnection = (connection: Connection) =>
-  connectionAccessor().process(connection)
-
 export const getDestinationFromConnection = (connection: Connection) =>
   connectionAccessor().destination(connection)
 

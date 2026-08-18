@@ -100,7 +100,6 @@ export const Backend = {
       totalDownloadBytes: 0,
       totalUploadRate: 0,
       totalDownloadRate: 0,
-      byProcess: [],
       byDomain: [],
       byDestination: [],
       byOutbound: [],

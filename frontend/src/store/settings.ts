@@ -342,7 +342,6 @@ export const connectionTableColumns = useStorage<CONNECTIONS_TABLE_ACCESSOR_KEY[
   'config/connection-table-columns',
   [
     CONNECTIONS_TABLE_ACCESSOR_KEY.Close,
-    CONNECTIONS_TABLE_ACCESSOR_KEY.Process,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Host,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Type,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Rule,

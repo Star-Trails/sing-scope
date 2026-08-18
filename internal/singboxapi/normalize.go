@@ -1,59 +1,11 @@
 package singboxapi
 
 import (
-	"fmt"
-	"path"
-	"strings"
 	"time"
 
 	"sing-scope/internal/domain"
 	pb "sing-scope/internal/singboxapi/gen"
 )
-
-// ExtractProcessName extracts a clean executable filename from a Windows or Unix process path or package names.
-func ExtractProcessName(processPath string, packageNames []string) string {
-	if processPath != "" {
-		// Strip leading special characters like ":System" or ":System Idle Process"
-		if strings.HasPrefix(processPath, ":") {
-			return strings.TrimPrefix(processPath, ":")
-		}
-		// Normalize Windows backslashes and POSIX slashes
-		normalized := strings.ReplaceAll(processPath, "\\", "/")
-		base := path.Base(normalized)
-		if base != "." && base != "/" && base != "" {
-			return base
-		}
-		return processPath
-	}
-	if len(packageNames) > 0 && packageNames[0] != "" {
-		return packageNames[0]
-	}
-	return ""
-}
-
-// NormalizeProcessInfo converts protobuf ProcessInfo to domain ProcessInfo.
-func NormalizeProcessInfo(proto *pb.ProcessInfo) *domain.ProcessInfo {
-	if proto == nil {
-		return nil
-	}
-	pPath := proto.GetProcessPath()
-	pkgNames := proto.GetPackageNames()
-	pName := ExtractProcessName(pPath, pkgNames)
-	if pName == "" && proto.GetProcessId() > 0 {
-		pName = fmt.Sprintf("PID:%d", proto.GetProcessId())
-	}
-	if pName == "" {
-		pName = "Unknown"
-	}
-	return &domain.ProcessInfo{
-		ProcessID:    proto.GetProcessId(),
-		UserID:       proto.GetUserId(),
-		UserName:     proto.GetUserName(),
-		ProcessPath:  pPath,
-		ProcessName:  pName,
-		PackageNames: pkgNames,
-	}
-}
 
 // NormalizeConnection converts protobuf Connection to domain Flow.
 func NormalizeConnection(proto *pb.Connection) *domain.Flow {
@@ -90,7 +42,6 @@ func NormalizeConnection(proto *pb.Connection) *domain.Flow {
 		Outbound:      proto.GetOutbound(),
 		OutboundType:  proto.GetOutboundType(),
 		ChainList:     proto.GetChainList(),
-		Process:       NormalizeProcessInfo(proto.GetProcessInfo()),
 		CreatedAt:     createdAt,
 		ClosedAt:      closedAt,
 		UploadTotal:   proto.GetUplinkTotal(),

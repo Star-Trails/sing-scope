@@ -2,32 +2,29 @@ package analytics
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 	"time"
 
 	"sing-scope/internal/domain"
 	"sing-scope/internal/ffi"
-	"sing-scope/internal/singboxapi"
 	"sing-scope/internal/store"
 )
 
 // BatchAnalysisResult represents the complete analytics breakdown.
 type BatchAnalysisResult struct {
-	TotalFlows         int                       `json:"totalFlows"`
-	ActiveFlows        int                       `json:"activeFlows"`
-	TotalUploadBytes   int64                     `json:"totalUploadBytes"`
-	TotalDownloadBytes int64                     `json:"totalDownloadBytes"`
-	TotalUploadRate    float64                   `json:"totalUploadRate"`
-	TotalDownloadRate  float64                   `json:"totalDownloadRate"`
-	ByProcess          []domain.ProcessAggregate `json:"byProcess"`
-	ByDomain           []domain.NamedAggregate   `json:"byDomain"`
-	ByDestination      []domain.NamedAggregate   `json:"byDestination"`
-	ByOutbound         []domain.NamedAggregate   `json:"byOutbound"`
-	ByRule             []domain.NamedAggregate   `json:"byRule"`
-	ByProtocol         []domain.NamedAggregate   `json:"byProtocol"`
-	ComputeTimeUs      uint64                    `json:"computeTimeUs"`
-	Engine             string                    `json:"engine"` // "rust-native" or "pure-go"
+	TotalFlows         int                     `json:"totalFlows"`
+	ActiveFlows        int                     `json:"activeFlows"`
+	TotalUploadBytes   int64                   `json:"totalUploadBytes"`
+	TotalDownloadBytes int64                   `json:"totalDownloadBytes"`
+	TotalUploadRate    float64                 `json:"totalUploadRate"`
+	TotalDownloadRate  float64                 `json:"totalDownloadRate"`
+	ByDomain           []domain.NamedAggregate `json:"byDomain"`
+	ByDestination      []domain.NamedAggregate `json:"byDestination"`
+	ByOutbound         []domain.NamedAggregate `json:"byOutbound"`
+	ByRule             []domain.NamedAggregate `json:"byRule"`
+	ByProtocol         []domain.NamedAggregate `json:"byProtocol"`
+	ComputeTimeUs      uint64                  `json:"computeTimeUs"`
+	Engine             string                  `json:"engine"` // "rust-native" or "pure-go"
 }
 
 // Service provides high-level analytics operations over flows.
@@ -35,9 +32,11 @@ type Service struct {
 	store *store.ConnectionStore
 }
 
-// NewService creates a new Analytics Service.
-func NewService(s *store.ConnectionStore) *Service {
-	return &Service{store: s}
+// NewService creates a new analytics service.
+func NewService(connStore *store.ConnectionStore) *Service {
+	return &Service{
+		store: connStore,
+	}
 }
 
 // AnalyzeBatch computes full multi-dimensional analytics for current flows.
@@ -82,21 +81,6 @@ func (s *Service) analyzeBatchPureGo(flows []*domain.Flow, filter string, topN i
 	outboundMap := make(map[string]*domain.NamedAggregate)
 	ruleMap := make(map[string]*domain.NamedAggregate)
 	protocolMap := make(map[string]*domain.NamedAggregate)
-
-	type procAcc struct {
-		name          string
-		path          string
-		pid           uint32
-		connCount     int
-		activeCount   int
-		uploadTotal   int64
-		downloadTotal int64
-		uploadRate    float64
-		downloadRate  float64
-		domains       map[string]int64
-		destinations  map[string]int64
-	}
-	procMap := make(map[string]*procAcc)
 
 	for _, f := range flows {
 		if !store.MatchesInboundFilter(f, filter) {
@@ -209,88 +193,15 @@ func (s *Service) analyzeBatchPureGo(flows []*domain.Flow, filter string, topN i
 			entry.DownloadTotal += f.DownloadTotal
 			entry.TotalBytes += totalBytes
 		}
-		// Process
-		pName := "Unknown"
-		pPath := ""
-		var pID uint32
-		if f.Process != nil {
-			if f.Process.ProcessName != "" && f.Process.ProcessName != "Unknown" {
-				pName = f.Process.ProcessName
-			} else if f.Process.ProcessPath != "" {
-				pName = singboxapi.ExtractProcessName(f.Process.ProcessPath, f.Process.PackageNames)
-			} else if len(f.Process.PackageNames) > 0 {
-				pName = f.Process.PackageNames[0]
-			} else if f.Process.ProcessID > 0 {
-				pName = fmt.Sprintf("PID:%d", f.Process.ProcessID)
-			}
-			pPath = f.Process.ProcessPath
-			pID = f.Process.ProcessID
-		}
-
-		pEntry, ok := procMap[pName]
-		if !ok {
-			pEntry = &procAcc{
-				name:         pName,
-				path:         pPath,
-				pid:          pID,
-				domains:      make(map[string]int64),
-				destinations: make(map[string]int64),
-			}
-			procMap[pName] = pEntry
-		}
-		pEntry.connCount++
-		if f.IsActive {
-			pEntry.activeCount++
-			pEntry.uploadRate += f.UploadRate
-			pEntry.downloadRate += f.DownloadRate
-		}
-		pEntry.uploadTotal += f.UploadTotal
-		pEntry.downloadTotal += f.DownloadTotal
-		if f.Domain != "" {
-			pEntry.domains[f.Domain] += totalBytes
-		}
-		if f.Destination != "" {
-			pEntry.destinations[f.Destination] += totalBytes
-		}
 	}
 
-	// Sort slices
-	byDomain := sortAndTruncateMap(domainMap, topN)
-	byDest := sortAndTruncateMap(destMap, topN)
-	byOutbound := sortAndTruncateMap(outboundMap, topN)
-	byRule := sortAndTruncateMap(ruleMap, topN)
-	byProtocol := sortAndTruncateMap(protocolMap, topN)
+	byDomain := extractTopAggregates(domainMap, topN)
+	byDest := extractTopAggregates(destMap, topN)
+	byOutbound := extractTopAggregates(outboundMap, topN)
+	byRule := extractTopAggregates(ruleMap, topN)
+	byProtocol := extractTopAggregates(protocolMap, topN)
 
-	byProcess := make([]domain.ProcessAggregate, 0, len(procMap))
-	for _, p := range procMap {
-		totalB := p.uploadTotal + p.downloadTotal
-
-		topDoms := sortMapToAggregates(p.domains, 5)
-		topDests := sortMapToAggregates(p.destinations, 5)
-
-		byProcess = append(byProcess, domain.ProcessAggregate{
-			ProcessName:     p.name,
-			ProcessPath:     p.path,
-			ProcessID:       p.pid,
-			ConnectionCount: p.connCount,
-			ActiveCount:     p.activeCount,
-			UploadTotal:     p.uploadTotal,
-			DownloadTotal:   p.downloadTotal,
-			TotalBytes:      totalB,
-			UploadRate:      p.uploadRate,
-			DownloadRate:    p.downloadRate,
-			TopDomains:      topDoms,
-			TopDestinations: topDests,
-		})
-	}
-	sort.Slice(byProcess, func(i, j int) bool {
-		return byProcess[i].TotalBytes > byProcess[j].TotalBytes
-	})
-	if len(byProcess) > topN {
-		byProcess = byProcess[:topN]
-	}
-
-	elapsedUs := uint64(time.Since(start).Microseconds())
+	computeTimeUs := uint64(time.Since(start).Microseconds())
 
 	return BatchAnalysisResult{
 		TotalFlows:         totalFlows,
@@ -299,43 +210,26 @@ func (s *Service) analyzeBatchPureGo(flows []*domain.Flow, filter string, topN i
 		TotalDownloadBytes: totalDownload,
 		TotalUploadRate:    totalUpRate,
 		TotalDownloadRate:  totalDownRate,
-		ByProcess:          byProcess,
 		ByDomain:           byDomain,
 		ByDestination:      byDest,
 		ByOutbound:         byOutbound,
 		ByRule:             byRule,
 		ByProtocol:         byProtocol,
-		ComputeTimeUs:      elapsedUs,
+		ComputeTimeUs:      computeTimeUs,
 		Engine:             "pure-go",
 	}
 }
 
-func sortAndTruncateMap(m map[string]*domain.NamedAggregate, topN int) []domain.NamedAggregate {
+func extractTopAggregates(m map[string]*domain.NamedAggregate, topN int) []domain.NamedAggregate {
 	list := make([]domain.NamedAggregate, 0, len(m))
-	for _, v := range m {
-		list = append(list, *v)
+	for _, agg := range m {
+		list = append(list, *agg)
 	}
-	sort.Slice(list, func(i, j int) bool {
-		return list[i].TotalBytes > list[j].TotalBytes
-	})
-	if len(list) > topN {
-		list = list[:topN]
-	}
-	return list
-}
 
-func sortMapToAggregates(m map[string]int64, topN int) []domain.NamedAggregate {
-	list := make([]domain.NamedAggregate, 0, len(m))
-	for k, v := range m {
-		list = append(list, domain.NamedAggregate{
-			Key:        k,
-			Name:       k,
-			TotalBytes: v,
-		})
-	}
 	sort.Slice(list, func(i, j int) bool {
 		return list[i].TotalBytes > list[j].TotalBytes
 	})
+
 	if len(list) > topN {
 		list = list[:topN]
 	}

@@ -38,16 +38,6 @@ const fetchSingboxConnections = (): {
           outbound: f.outbound,
           outboundType: f.outboundType,
           chainList: f.chainList && f.chainList.length ? f.chainList : [f.outbound].filter(Boolean),
-          processInfo: f.process
-            ? {
-                processId: f.process.processId,
-                userId: f.process.userId,
-                userName: f.process.userName,
-                processPath: f.process.processPath,
-                processName: f.process.processName,
-                packageNames: f.process.packageNames,
-              }
-            : undefined,
           createdAt: BigInt(new Date(f.createdAt || Date.now()).getTime()),
           closedAt: f.closedAt ? BigInt(new Date(f.closedAt).getTime()) : 0n,
           uplinkTotal: BigInt(f.uploadTotal || 0),
@@ -149,18 +139,6 @@ export const connectionAccessor: ConnectionAccessor = {
       return `[${host}]:${destinationPort}`
     }
     return `${host}:${destinationPort}`
-  },
-  process: (connection) => {
-    const c = asSingbox(connection)
-    if (c.processInfo?.processName && c.processInfo.processName !== 'Unknown') {
-      return c.processInfo.processName
-    }
-    const processPath = c.processInfo?.processPath ?? ''
-    const fromPath = processPath ? processPath.replace(/^.*[/\\](.*)$/, '$1') : ''
-    if (fromPath) return fromPath
-    if (c.processInfo?.packageNames?.length) return c.processInfo.packageNames[0]
-    if (c.processInfo?.processId) return `PID:${c.processInfo.processId}`
-    return '-'
   },
   destination: (connection) => {
     const c = asSingbox(connection)

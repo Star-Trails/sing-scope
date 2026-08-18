@@ -15,7 +15,6 @@ import {
   getHostFromConnection,
   getInboundUserFromConnection,
   getNetworkTypeFromConnection,
-  getProcessFromConnection,
 } from '@/helper'
 import { toSearchRegex } from '@/helper/search'
 import type { Connection } from '@/types'
@@ -129,7 +128,6 @@ const isDesc = computed(() => {
 // 排序键提取器:每条连接每拍只算一次键,替代在 O(N log N) 次比较里反复构串/建 dayjs。
 const sortKeyFunctionMap: Record<SORT_TYPE, (connection: Connection) => string | number> = {
   [SORT_TYPE.HOST]: getHostFromConnection,
-  [SORT_TYPE.PROCESS]: getProcessFromConnection,
   [SORT_TYPE.RULE]: getConnectionRule,
   [SORT_TYPE.CHAINS]: getChainsStringFromConnection,
   [SORT_TYPE.DOWNLOAD]: getConnectionDownload,

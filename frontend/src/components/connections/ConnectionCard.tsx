@@ -102,11 +102,6 @@ export default defineComponent<{
             {highlightedText(CONNECTIONS_TABLE_ACCESSOR_KEY.Rule)}
           </span>
         ),
-        [CONNECTIONS_TABLE_ACCESSOR_KEY.Process]: () => (
-          <span class="w-60 grow truncate break-all">
-            {highlightedText(CONNECTIONS_TABLE_ACCESSOR_KEY.Process)}
-          </span>
-        ),
         [CONNECTIONS_TABLE_ACCESSOR_KEY.Chains]: () => (
           <span
             class={[

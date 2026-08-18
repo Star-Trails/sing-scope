@@ -4,7 +4,6 @@ import {
   getConnectionHostname,
   getConnectionSourceIP,
   getConnectionUpload,
-  getProcessFromConnection,
 } from '@/helper'
 import {
   clearConnectionHistoryFromIndexedDB,
@@ -348,7 +347,7 @@ export const aggregateConnections = (
         key = hostkey.split('.').slice(-2).join('.')
       }
     } else if (type === ConnectionHistoryType.Process) {
-      key = getProcessFromConnection(connection)
+      key = '-'
     } else if (type === ConnectionHistoryType.Outbound) {
       key = getConnectionChains(connection)[0] || '-'
     } else if (type === ConnectionHistoryType.ProxyGroup) {

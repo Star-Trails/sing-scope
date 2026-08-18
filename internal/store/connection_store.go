@@ -51,10 +51,9 @@ type ConnectionStore struct {
 	// Time-series history (1s points)
 	timeSeries []domain.TimeSeriesPoint
 
-	// Known inbounds, outbounds, processes for filter suggestions
+	// Known inbounds, outbounds for filter suggestions
 	inbounds   map[string]string // tag -> type
 	outbounds  map[string]string // tag -> type
-	processes  map[string]bool   // processName
 	protocols  map[string]bool
 
 	// Active TUN filter tag (empty = all inbounds, "tun" = all tun, or specific tag)
@@ -80,7 +79,6 @@ func NewConnectionStore(opts StoreOptions) *ConnectionStore {
 		timeSeries:          make([]domain.TimeSeriesPoint, 0, opts.MaxTimeSeriesPts),
 		inbounds:            make(map[string]string),
 		outbounds:           make(map[string]string),
-		processes:           make(map[string]bool),
 		protocols:           make(map[string]bool),
 		lastUpdateTimestamp: time.Now(),
 	}
@@ -148,9 +146,6 @@ func (s *ConnectionStore) ProcessBatch(events []domain.FlowEvent, isReset bool) 
 				}
 				if flow.Outbound != "" {
 					s.outbounds[flow.Outbound] = flow.OutboundType
-				}
-				if flow.Process != nil && flow.Process.ProcessName != "" {
-					s.processes[flow.Process.ProcessName] = true
 				}
 				if flow.Protocol != "" {
 					s.protocols[flow.Protocol] = true
@@ -308,7 +303,6 @@ func MatchesInboundFilter(flow *domain.Flow, filter string) bool {
 // QueryOptions represents query parameters for retrieving flows.
 type QueryOptions struct {
 	Search     string `json:"search"`
-	Process    string `json:"process"`
 	Inbound    string `json:"inbound"`
 	Outbound   string `json:"outbound"`
 	Protocol   string `json:"protocol"`
@@ -346,9 +340,6 @@ func (s *ConnectionStore) GetFlows(opts QueryOptions) FlowListResult {
 		if !MatchesInboundFilter(f, inboundFilter) {
 			continue
 		}
-		if opts.Process != "" && (f.Process == nil || f.Process.ProcessName != opts.Process) {
-			continue
-		}
 		if opts.Outbound != "" && f.Outbound != opts.Outbound {
 			continue
 		}
@@ -368,9 +359,6 @@ func (s *ConnectionStore) GetFlows(opts QueryOptions) FlowListResult {
 		for i := len(s.closedHistory) - 1; i >= 0; i-- {
 			f := s.closedHistory[i]
 			if !MatchesInboundFilter(f, inboundFilter) {
-				continue
-			}
-			if opts.Process != "" && (f.Process == nil || f.Process.ProcessName != opts.Process) {
 				continue
 			}
 			if opts.Outbound != "" && f.Outbound != opts.Outbound {
@@ -426,14 +414,6 @@ func matchesSearch(f *domain.Flow, q string) bool {
 	if strings.Contains(strings.ToLower(f.Outbound), q) {
 		return true
 	}
-	if f.Process != nil {
-		if strings.Contains(strings.ToLower(f.Process.ProcessName), q) {
-			return true
-		}
-		if strings.Contains(strings.ToLower(f.Process.ProcessPath), q) {
-			return true
-		}
-	}
 	return false
 }
 
@@ -459,17 +439,6 @@ func sortFlows(flows []*domain.Flow, sortBy string, sortDesc bool) {
 		less = func(i, j int) bool { return flows[i].CreatedAt.Before(flows[j].CreatedAt) }
 	case "domain":
 		less = func(i, j int) bool { return flows[i].Domain < flows[j].Domain }
-	case "process":
-		less = func(i, j int) bool {
-			p1, p2 := "", ""
-			if flows[i].Process != nil {
-				p1 = flows[i].Process.ProcessName
-			}
-			if flows[j].Process != nil {
-				p2 = flows[j].Process.ProcessName
-			}
-			return p1 < p2
-		}
 	default:
 		return
 	}
@@ -511,7 +480,6 @@ func (s *ConnectionStore) GetOverviewSummary() domain.OverviewSummary {
 	inboundFilter := s.selectedInboundFilter
 	var activeTUNCount, activeTotalCount, tcpCount, udpCount int
 
-	processBytes := make(map[string]*domain.NamedAggregate)
 	domainBytes := make(map[string]*domain.NamedAggregate)
 	destBytes := make(map[string]*domain.NamedAggregate)
 	outboundBytes := make(map[string]*domain.NamedAggregate)
@@ -530,29 +498,6 @@ func (s *ConnectionStore) GetOverviewSummary() domain.OverviewSummary {
 		}
 
 		total := f.UploadTotal + f.DownloadTotal
-
-		// Process
-		pName := "Unknown"
-		if f.Process != nil && f.Process.ProcessName != "" && f.Process.ProcessName != "Unknown" {
-			pName = f.Process.ProcessName
-		} else if f.Process != nil && f.Process.ProcessPath != "" {
-			pName = f.Process.ProcessPath
-		}
-		if agg, ok := processBytes[pName]; ok {
-			agg.TotalBytes += total
-			agg.UploadTotal += f.UploadTotal
-			agg.DownloadTotal += f.DownloadTotal
-			agg.ActiveCount++
-		} else {
-			processBytes[pName] = &domain.NamedAggregate{
-				Key:           pName,
-				Name:          pName,
-				TotalBytes:    total,
-				UploadTotal:   f.UploadTotal,
-				DownloadTotal: f.DownloadTotal,
-				ActiveCount:   1,
-			}
-		}
 
 		// Domain
 		if f.Domain != "" {
@@ -607,7 +552,6 @@ func (s *ConnectionStore) GetOverviewSummary() domain.OverviewSummary {
 		}
 	}
 
-	topProcess := findMaxAggregate(processBytes)
 	topDomain := findMaxAggregate(domainBytes)
 	topDest := findMaxAggregate(destBytes)
 	topOutbound := findMaxAggregate(outboundBytes)
@@ -624,7 +568,6 @@ func (s *ConnectionStore) GetOverviewSummary() domain.OverviewSummary {
 		ActiveTotalFlows: activeTotalCount,
 		TCPCount:         tcpCount,
 		UDPCount:         udpCount,
-		TopProcess:       topProcess,
 		TopDomain:        topDomain,
 		TopDestination:   topDest,
 		TopOutbound:      topOutbound,
@@ -661,8 +604,8 @@ func (s *ConnectionStore) GetDiscoveredRules() []domain.RuleInfo {
 	return res
 }
 
-// GetMetadataCatalogs returns the list of known inbounds, outbounds, processes, and protocols.
-func (s *ConnectionStore) GetMetadataCatalogs() (inbounds []string, outbounds []string, processes []string, protocols []string) {
+// GetMetadataCatalogs returns the list of known inbounds, outbounds, and protocols.
+func (s *ConnectionStore) GetMetadataCatalogs() (inbounds []string, outbounds []string, protocols []string) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -671,9 +614,6 @@ func (s *ConnectionStore) GetMetadataCatalogs() (inbounds []string, outbounds []
 	}
 	for k := range s.outbounds {
 		outbounds = append(outbounds, k)
-	}
-	for k := range s.processes {
-		processes = append(processes, k)
 	}
 	for k := range s.protocols {
 		protocols = append(protocols, k)
