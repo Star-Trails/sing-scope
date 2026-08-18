@@ -2,7 +2,6 @@
 
 A polished, high-performance cross-platform desktop application built for analyzing network connections, traffic flows, and bandwidth metrics exposed by the **new sing-box 1.14+ gRPC API (`StartedService`)**.
 
-- **Author**: Star-Trails <startrails01@outlook.com>
 - **License**: [MIT License](LICENSE)
 
 ---
