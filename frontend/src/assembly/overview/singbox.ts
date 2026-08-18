@@ -1,7 +1,4 @@
-// sing-box 后端的概览统计组装:优先通过 Wails v3 Go Backend (AppService) 获取实时状态,
-// 兜底回退到 gRPC SubscribeStatus 订阅。
-import { subscribeStream } from '@/api/singbox/subscriptions'
-import type { Status } from '@/gen/daemon/started_service_pb'
+// sing-box 后端的概览统计组装: 100% 通过 Wails v3 Go Backend (AppService) 获取实时状态
 import { ref, watch, type Ref } from 'vue'
 
 export interface SingboxStream<T> {
@@ -12,7 +9,6 @@ export interface SingboxStream<T> {
 type StatusListener = (status: any) => void
 
 const statusListeners = new Set<StatusListener>()
-let statusHandle: { close: () => void } | null = null
 let latestStatus: any = null
 let pollTimer: number | null = null
 
@@ -21,46 +17,37 @@ const closeSharedStatusStream = () => {
     clearInterval(pollTimer)
     pollTimer = null
   }
-  statusHandle?.close()
-  statusHandle = null
   latestStatus = null
 }
 
 const ensureSharedStatusStream = () => {
-  if (statusHandle || pollTimer) return true
+  if (pollTimer) return true
 
-  // Check if running inside Wails v3
   const appService = (window as any).go?.app?.AppService
-  if (appService?.GetSystemStatus) {
-    const poll = async () => {
-      try {
+  const poll = async () => {
+    try {
+      if (appService?.GetSystemStatus) {
         const [sys, ov] = await Promise.all([
           appService.GetSystemStatus(),
           appService.GetOverviewSummary ? appService.GetOverviewSummary('') : null,
         ])
         latestStatus = {
-          memory: BigInt(sys.memory || 0),
-          goroutines: sys.goroutines || 0,
-          downlink: BigInt(Math.round(ov?.downloadRate || sys.downlink || 0)),
-          uplink: BigInt(Math.round(ov?.uploadRate || sys.uplink || 0)),
-          downlinkTotal: BigInt(ov?.sessionDownload || sys.downlinkTotal || 0),
-          uplinkTotal: BigInt(ov?.sessionUpload || sys.uplinkTotal || 0),
+          memory: BigInt(sys?.memory || 0),
+          goroutines: sys?.goroutines || 0,
+          downlink: BigInt(Math.round(ov?.downloadRate || sys?.downlink || 0)),
+          uplink: BigInt(Math.round(ov?.uploadRate || sys?.uplink || 0)),
+          downlinkTotal: BigInt(ov?.sessionDownload || sys?.downlinkTotal || 0),
+          uplinkTotal: BigInt(ov?.sessionUpload || sys?.uplinkTotal || 0),
         }
         statusListeners.forEach((listener) => listener(latestStatus))
-      } catch {
-        // ignore
       }
+    } catch {
+      // ignore
     }
-    poll()
-    pollTimer = window.setInterval(poll, 1000)
-    return true
   }
 
-  statusHandle = subscribeStream<Status>('status', (status) => {
-    latestStatus = status
-    statusListeners.forEach((listener) => listener(status))
-  })
-
+  poll()
+  pollTimer = window.setInterval(poll, 1000)
   return true
 }
 
@@ -88,14 +75,14 @@ const createSingboxStat = <T>(kind: 'memory' | 'traffic'): SingboxStream<T> => {
   const sub =
     kind === 'memory'
       ? subscribeSingboxStatus((status) => ({
-          inuse: Number(status.memory),
-          goroutines: status.goroutines,
+          inuse: Number(status?.memory || 0),
+          goroutines: status?.goroutines || 0,
         }))
       : subscribeSingboxStatus((status) => ({
-          down: Number(status.downlink),
-          up: Number(status.uplink),
-          downTotal: Number(status.downlinkTotal),
-          upTotal: Number(status.uplinkTotal),
+          down: Number(status?.downlink || 0),
+          up: Number(status?.uplink || 0),
+          downTotal: Number(status?.downlinkTotal || 0),
+          upTotal: Number(status?.uplinkTotal || 0),
         }))
 
   if (!sub) return { data, close: () => {} }

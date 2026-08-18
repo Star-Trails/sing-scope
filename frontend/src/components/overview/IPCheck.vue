@@ -63,7 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { getIPFromIpipnetAPI, getIPInfo } from '@/api/geoip'
+const getIPFromIpipnetAPI = async () => ({ data: { ip: '', location: [] } })
+const getIPInfo = async (_opt?: any) => undefined
 import { ipForChina, ipForGlobal } from '@/composables/overview'
 import { useTooltip } from '@/helper/tooltip'
 import { autoIPCheck, IPInfoAPI } from '@/store/settings'

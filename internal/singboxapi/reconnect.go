@@ -232,6 +232,42 @@ func (m *Manager) URLTest(ctx context.Context, outboundTag string) error {
 	}
 	return client.URLTest(ctx, outboundTag)
 }
+// GetStartedAt proxies started timestamp query to the active client.
+func (m *Manager) GetStartedAt(ctx context.Context) (int64, error) {
+	m.mu.RLock()
+	client := m.activeClient
+	m.mu.RUnlock()
+
+	if client == nil {
+		return 0, nil
+	}
+	return client.GetStartedAt(ctx)
+}
+
+// GetClashModeStatus proxies clash mode query to the active client.
+func (m *Manager) GetClashModeStatus(ctx context.Context) (*domain.ClashModeStatus, error) {
+	m.mu.RLock()
+	client := m.activeClient
+	m.mu.RUnlock()
+
+	if client == nil {
+		return &domain.ClashModeStatus{CurrentMode: "rule", ModeList: []string{"rule", "global", "direct"}}, nil
+	}
+	return client.GetClashModeStatus(ctx)
+}
+
+// SetClashMode proxies clash mode update to the active client.
+func (m *Manager) SetClashMode(ctx context.Context, mode string) error {
+	m.mu.RLock()
+	client := m.activeClient
+	m.mu.RUnlock()
+
+	if client == nil {
+		return nil
+	}
+	return client.SetClashMode(ctx, mode)
+}
+
 
 func (m *Manager) runLoop(ctx context.Context) {
 	var backoff time.Duration

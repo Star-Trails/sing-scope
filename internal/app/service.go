@@ -233,12 +233,41 @@ func (s *AppService) SelectOutbound(groupTag, outboundTag string) bool {
 	err := s.manager.SelectOutbound(ctx, groupTag, outboundTag)
 	return err == nil
 }
-
 // URLTest triggers an outbound latency test.
 func (s *AppService) URLTest(outboundTag string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 	err := s.manager.URLTest(ctx, outboundTag)
+	return err == nil
+}
+
+// GetStartedAt returns the instance start timestamp in ms.
+func (s *AppService) GetStartedAt() int64 {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	t, _ := s.manager.GetStartedAt(ctx)
+	return t
+}
+
+// GetClashModeStatus returns available and current routing modes.
+func (s *AppService) GetClashModeStatus() domain.ClashModeStatus {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	st, err := s.manager.GetClashModeStatus(ctx)
+	if err != nil || st == nil {
+		return domain.ClashModeStatus{
+			CurrentMode: "rule",
+			ModeList:    []string{"rule", "global", "direct"},
+		}
+	}
+	return *st
+}
+
+// SetClashMode updates the active routing mode.
+func (s *AppService) SetClashMode(mode string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := s.manager.SetClashMode(ctx, mode)
 	return err == nil
 }
 

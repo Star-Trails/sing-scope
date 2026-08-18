@@ -216,6 +216,35 @@ func (c *Client) URLTest(ctx context.Context, outboundTag string) error {
 	return err
 }
 
+// GetStartedAt queries the sing-box instance start timestamp in ms.
+func (c *Client) GetStartedAt(ctx context.Context) (int64, error) {
+	res, err := c.grpcClient.GetStartedAt(ctx, &emptypb.Empty{})
+	if err != nil {
+		return 0, err
+	}
+	return res.GetStartedAt(), nil
+}
+
+// GetClashModeStatus returns available clash modes and current mode.
+func (c *Client) GetClashModeStatus(ctx context.Context) (*domain.ClashModeStatus, error) {
+	status, err := c.grpcClient.GetClashModeStatus(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+	return &domain.ClashModeStatus{
+		CurrentMode: status.GetCurrentMode(),
+		ModeList:    status.GetModeList(),
+	}, nil
+}
+
+// SetClashMode sets the active clash routing mode.
+func (c *Client) SetClashMode(ctx context.Context, mode string) error {
+	_, err := c.grpcClient.SetClashMode(ctx, &pb.ClashMode{
+		Mode: mode,
+	})
+	return err
+}
+
 // Close terminates the gRPC connection channel.
 func (c *Client) Close() error {
 	if c.conn != nil {

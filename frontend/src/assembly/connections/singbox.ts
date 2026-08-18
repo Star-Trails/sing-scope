@@ -1,12 +1,4 @@
-// sing-box 后端的连接组装:优先通过 Wails v3 Go Backend (AppService) 获取实时连接,
-// 兜底回退到 gRPC SubscribeConnections 订阅。
-import { getSingboxClient } from '@/api/singbox/client'
-import { subscribeStream } from '@/api/singbox/subscriptions'
-import {
-  ConnectionEventType,
-  type ConnectionEvents,
-  type Connection as PbConnection,
-} from '@/gen/daemon/started_service_pb'
+// sing-box 后端的连接组装: 100% 通过 Wails v3 Go Backend (AppService) 获取实时连接
 import type { Connection } from '@/types'
 import { shallowRef, type Ref } from 'vue'
 import {
@@ -23,15 +15,16 @@ const fetchSingboxConnections = (): {
   const data = shallowRef<ConnectionsSnapshot>()
 
   const appService = (window as any).go?.app?.AppService
-  if (appService?.GetFlows) {
-    let pollTimer: number | null = null
-    const poll = async () => {
-      try {
-        const res = await appService.GetFlows({ activeOnly: false, limit: 1000 })
+  let pollTimer: number | null = null
+
+  const poll = async () => {
+    try {
+      if (appService?.GetFlows) {
+        const res = await appService.GetFlows({ activeOnly: false, limit: 2000 })
         const active: Connection[] = []
         const closed: Connection[] = []
 
-        for (const f of res.flows || []) {
+        for (const f of res?.flows || []) {
           const c: any = {
             id: f.id,
             inbound: f.inbound,
@@ -47,7 +40,7 @@ const fetchSingboxConnections = (): {
             rule: f.rule,
             outbound: f.outbound,
             outboundType: f.outboundType,
-            chainList: f.chainList || [f.outbound].filter(Boolean),
+            chainList: f.chainList && f.chainList.length ? f.chainList : [f.outbound].filter(Boolean),
             processInfo: f.process
               ? {
                   processId: f.process.processId,
@@ -72,102 +65,19 @@ const fetchSingboxConnections = (): {
         }
 
         data.value = { active, closed }
-      } catch {
-        // ignore
       }
-    }
-
-    poll()
-    pollTimer = window.setInterval(poll, 1000)
-
-    return {
-      data,
-      close: () => {
-        if (pollTimer) clearInterval(pollTimer)
-      },
+    } catch {
+      // ignore
     }
   }
 
-  // 活跃连接表
-  const conns = new Map<string, Connection>()
-  let newlyClosed: Connection[] = []
-  let timer: number | null = null
-
-  const enrich = (c: PbConnection | Connection, down: number, up: number): Connection =>
-    Object.assign({}, c, { downloadSpeed: down, uploadSpeed: up }) as Connection
-
-  const close = (id: string, base?: PbConnection | Connection) => {
-    const c = base ?? conns.get(id)
-    conns.delete(id)
-    if (c) newlyClosed.push(enrich(c, 0, 0))
-  }
-
-  const emit = () => {
-    timer = null
-    data.value = {
-      active: Array.from(conns.values()),
-      closed: newlyClosed,
-    }
-    newlyClosed = []
-  }
-  const scheduleEmit = () => {
-    if (timer) return
-    timer = window.setTimeout(emit, 100)
-  }
-
-  const handle = subscribeStream<ConnectionEvents>('connections', (msg) => {
-    if (msg.reset) {
-      conns.clear()
-    }
-    for (const event of msg.events) {
-      const downDelta = Number(event.downlinkDelta)
-      const upDelta = Number(event.uplinkDelta)
-
-      switch (event.type) {
-        case ConnectionEventType.CONNECTION_EVENT_NEW:
-          if (event.connection) {
-            if (event.connection.closedAt > 0n) close(event.id, event.connection)
-            else conns.set(event.id, enrich(event.connection, 0, 0))
-          }
-          break
-        case ConnectionEventType.CONNECTION_EVENT_UPDATE: {
-          if (event.connection) {
-            if (event.connection.closedAt > 0n) close(event.id, event.connection)
-            else conns.set(event.id, enrich(event.connection, downDelta, upDelta))
-          } else {
-            const prev = conns.get(event.id)
-            if (prev) {
-              const s = asSingbox(prev)
-              conns.set(
-                event.id,
-                enrich(
-                  {
-                    ...s,
-                    uplinkTotal: s.uplinkTotal + event.uplinkDelta,
-                    downlinkTotal: s.downlinkTotal + event.downlinkDelta,
-                  },
-                  downDelta,
-                  upDelta,
-                ),
-              )
-            }
-          }
-          break
-        }
-        case ConnectionEventType.CONNECTION_EVENT_CLOSED: {
-          close(event.id, event.connection)
-          break
-        }
-      }
-    }
-    scheduleEmit()
-  })
+  poll()
+  pollTimer = window.setInterval(poll, 1000)
 
   return {
     data,
     close: () => {
-      if (timer) clearTimeout(timer)
-      handle.close()
+      if (pollTimer) clearInterval(pollTimer)
     },
   }
 }
@@ -176,31 +86,20 @@ const closeSingboxConnection = async (id: string) => {
   const appService = (window as any).go?.app?.AppService
   if (appService?.CloseConnection) {
     await appService.CloseConnection(id)
-    return
   }
-  const client = getSingboxClient()?.client
-  if (!client) return
-  await client.closeConnection({ id })
 }
 
 const closeAllSingboxConnections = async () => {
   const appService = (window as any).go?.app?.AppService
   if (appService?.CloseAllConnections) {
     await appService.CloseAllConnections()
-    return
   }
-  const client = getSingboxClient()?.client
-  if (!client) return
-  await client.closeAllConnections({})
 }
 
 export const disconnectByIdAPI = closeSingboxConnection
-
 export const disconnectAllAPI = closeAllSingboxConnections
-
 export const fetchConnectionsAPI = fetchSingboxConnections
 
-// 拆分 "ip:port" / "[ipv6]:port"
 const splitHostPort = (value: string): [string, string] => {
   if (!value) return ['', '']
   const idx = value.lastIndexOf(':')
@@ -216,30 +115,27 @@ const splitHostPort = (value: string): [string, string] => {
   return [host, port]
 }
 
-const asSingbox = (connection: Connection) => connection as PbConnection
+const asSingbox = (connection: Connection) => connection as any
 
-const getNetwork = (c: PbConnection) => {
+const getNetwork = (c: any) => {
   const [, destinationPort] = splitHostPort(c.destination)
-
   if ((destinationPort === '443' || c.domain) && c.network === 'udp') {
     return 'quic'
   }
-
   return c.network
 }
 
-const getHostname = (c: PbConnection) => c.domain || splitHostPort(c.destination)[0]
+const getHostname = (c: any) => c.domain || splitHostPort(c.destination)[0]
 
 export const connectionAccessor: ConnectionAccessor = {
   chains: (connection) => {
     const c = asSingbox(connection)
-
     return c.chainList && c.chainList.length ? c.chainList : [c.outbound].filter(Boolean)
   },
-  download: (connection) => Number(asSingbox(connection).downlinkTotal),
-  upload: (connection) => Number(asSingbox(connection).uplinkTotal),
-  start: (connection) => Number(asSingbox(connection).createdAt),
-  rule: (connection) => asSingbox(connection).rule,
+  download: (connection) => Number(asSingbox(connection).downlinkTotal || 0),
+  upload: (connection) => Number(asSingbox(connection).uplinkTotal || 0),
+  start: (connection) => Number(asSingbox(connection).createdAt || 0),
+  rule: (connection) => asSingbox(connection).rule || '',
   rulePayload: () => '',
   sourceIP: (connection) => {
     const c = asSingbox(connection)
@@ -252,7 +148,6 @@ export const connectionAccessor: ConnectionAccessor = {
   network: (connection) => getNetwork(asSingbox(connection)),
   networkType: (connection) => {
     const c = asSingbox(connection)
-
     return `${c.inboundType} | ${getNetwork(c)}`
   },
   hostname: (connection) => getHostname(asSingbox(connection)),
@@ -268,17 +163,14 @@ export const connectionAccessor: ConnectionAccessor = {
   },
   process: (connection) => {
     const processPath = asSingbox(connection).processInfo?.processPath ?? ''
-
     return processPath.replace(/^.*[/\\](.*)$/, '$1') || '-'
   },
   destination: (connection) => {
     const c = asSingbox(connection)
-
     return splitHostPort(c.destination)[0] || c.domain
   },
   inboundUser: (connection) => {
     const c = asSingbox(connection)
-
     return c.user || c.inbound || '-'
   },
   sniffHost: (connection) => asSingbox(connection).domain,
@@ -290,6 +182,5 @@ export const connectionAccessor: ConnectionAccessor = {
 }
 
 export const getConnectionDisplayValue = createGetConnectionDisplayValue(connectionAccessor)
-
 export const getConnectionVisibleSearchValues =
   createGetConnectionVisibleSearchValues(connectionAccessor)

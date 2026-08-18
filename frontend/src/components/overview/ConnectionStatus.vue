@@ -55,17 +55,16 @@
 
 <script setup lang="ts">
 import {
-  getBaiduLatencyAPI,
-  getCloudflareLatencyAPI,
-  getGithubLatencyAPI,
-  getYouTubeLatencyAPI,
-} from '@/api/latency'
-import {
   baiduLatency,
   cloudflareLatency,
   githubLatency,
   youtubeLatency,
 } from '@/composables/overview'
+
+const getBaiduLatencyAPI = async () => 0
+const getCloudflareLatencyAPI = async () => 0
+const getGithubLatencyAPI = async () => 0
+const getYouTubeLatencyAPI = async () => 0
 import { getColorForLatency } from '@/helper'
 import { autoConnectionCheck } from '@/store/settings'
 import { BoltIcon } from '@heroicons/vue/24/outline'

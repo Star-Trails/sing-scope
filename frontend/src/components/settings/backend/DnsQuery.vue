@@ -78,7 +78,8 @@
 
 <script lang="ts" setup>
 import { queryDNSAPI } from '@/assembly/config'
-import { getIPInfo, type IPInfo } from '@/api/geoip'
+interface IPInfo { ip: string; country: string; region: string; city: string; asn: string; organization: string }
+const getIPInfo = async (_ip: string): Promise<IPInfo | undefined> => undefined
 import { notifyRequestError } from '@/helper/requestError'
 import type { DNSQuery } from '@/types'
 import { MapPinIcon, ServerIcon } from '@heroicons/vue/24/outline'

@@ -43,11 +43,6 @@ const childrenRouter = [
     component: RulesPage,
   },
   {
-    path: 'tools',
-    name: ROUTE_NAME.tools,
-    component: () => import('@/views/ToolsPage.vue'),
-  },
-  {
     path: 'settings',
     name: ROUTE_NAME.settings,
     component: SettingsPage,

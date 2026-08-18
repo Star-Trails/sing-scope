@@ -167,12 +167,9 @@ async function fetchHostname(ip: string): Promise<string | null> {
 
   try {
     const { data: result } = await queryDNSAPI({ name, type: 'PTR' })
-
     if (!result) return null
-
-    const answer = result.Answer?.find(({ type }) => type === 12)?.data
+    const answer = (result as any)?.Answer?.find(({ type }: any) => type === 12)?.data
     if (!answer) return null
-
     const hostname = answer.trim()
     if (!hostname) return null
 

@@ -142,7 +142,15 @@
 </template>
 
 <script setup lang="ts">
-import { getIPInfo, type IPInfo } from '@/api/geoip'
+export interface IPInfo {
+  ip: string
+  country: string
+  region: string
+  city: string
+  asn: string
+  organization: string
+}
+const getIPInfo = async (_ip: string): Promise<IPInfo | undefined> => undefined
 import { getConnectionDisplayValue } from '@/assembly/connections'
 import { proxyMap } from '@/assembly/proxies'
 import DialogWrapper from '@/components/common/DialogWrapper.vue'

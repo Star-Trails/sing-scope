@@ -3,7 +3,7 @@
 // 读取/派生 view 需要的字段 —— 不再把 sing-box 塑造成 clash 形状。
 // createGetConnectionDisplayValue 基于某一份 accessor 生成对应后端的 getConnectionDisplayValue,
 // 由 index.ts 门面按当前后端动态选用。
-import { getGeoIPInfoSync } from '@/api/geoip'
+const getGeoIPInfoSync = (_ip: string) => ({ ip: '', country: '', region: '', city: '', asn: '', organization: '' })
 import { CONNECTIONS_TABLE_ACCESSOR_KEY, PROXY_CHAIN_DIRECTION } from '@/constant'
 import { getIPLabelFromMap } from '@/helper/sourceip'
 import { fromNow, prettyBytesHelper } from '@/helper/utils'

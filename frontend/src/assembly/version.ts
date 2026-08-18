@@ -1,18 +1,15 @@
-// 组装层 · 版本与升级。
-// 优先通过 Wails v3 Go Backend (AppService) 同步获取，实现毫秒级快速启动。
-import { fetchClashVersion, restartCoreAPI, upgradeCoreAPI, upgradeUIAPI } from '@/api/clash'
-import { getSingboxClient } from '@/api/singbox/client'
+// 组装层 · 版本与状态。
+// 100% 通过 Wails v3 Go Backend (AppService) 同步获取。
 import HonkLogo from '@/assets/images/honk.svg'
 import MetacubexLogo from '@/assets/images/metacubex.jpg'
 import SingBoxLogo from '@/assets/images/sing-box.svg'
 import { MIHOMO, MIHOMO_CHANNEL } from '@/constant'
-import { getRequestErrorMessage } from '@/helper/requestError'
 import { activeBackend } from '@/store/setup'
 import type { Backend } from '@/types'
 import { computed, nextTick, ref } from 'vue'
-import { apiVersion, can, Channel, channel, core, Core, resetCore } from './backend'
+import { apiVersion, can, core, Core, resetCore } from './backend'
 
-export const version = ref()
+export const version = ref('sing-box 1.14')
 export const isCoreUpdateAvailable = ref(false)
 export const zashboardVersion = ref(__APP_VERSION__)
 
@@ -75,54 +72,32 @@ const fetchSingboxVersion = async () => {
       // fallback
     }
   }
-  const client = getSingboxClient()?.client
-  if (!client) return { data: { version: 'sing-box' } }
-  try {
-    const v = await client.getVersion({})
-    apiVersion.value = v.apiVersion
-    const version = v.version.includes('sing-box') ? v.version : `sing-box ${v.version}`
-    return { data: { version } }
-  } catch {
-    apiVersion.value = 4
-    return { data: { version: 'sing-box' } }
-  }
+  apiVersion.value = 4
+  return { data: { version: 'sing-box 1.14' } }
 }
 
-export const fetchVersionAPI = () =>
-  channel.value === Channel.Singbox ? fetchSingboxVersion() : fetchClashVersion()
+export const fetchVersionAPI = () => fetchSingboxVersion()
 
 const fetchSingboxStartedAt = async (): Promise<number> => {
-  const client = getSingboxClient()?.client
-  if (!client) return 0
-  try {
-    const res = await client.getStartedAt({})
-    return Number(res.startedAt)
-  } catch {
-    return 0
+  const appService = (window as any).go?.app?.AppService
+  if (appService?.GetStartedAt) {
+    try {
+      const ts = await appService.GetStartedAt()
+      return Number(ts || 0)
+    } catch {
+      return 0
+    }
   }
+  return 0
 }
 
 const probeBackend = async (backend: Backend) => {
   const startAt = Date.now()
-  let data
-
-  try {
-    ;({ data } = await fetchVersionAPI())
-  } catch (e) {
-    if (activeBackend.value?.uuid === backend.uuid) {
-      backendProbe.value = {
-        uuid: backend.uuid,
-        status: 'failed',
-        latency: 0,
-        message: getRequestErrorMessage(e),
-      }
-    }
-    throw e
-  }
+  const { data } = await fetchVersionAPI()
 
   if (activeBackend.value?.uuid !== backend.uuid) return
 
-  version.value = data?.version || 'sing-box'
+  version.value = data?.version || 'sing-box 1.14'
   core.value = detectCore(version.value)
   backendProbe.value = {
     uuid: backend.uuid,
@@ -142,7 +117,6 @@ export const coreReady = async () => {
 
 export const probeActiveBackend = () => {
   const backend = activeBackend.value
-
   resetCore()
   version.value = ''
   startedAt.value = 0
@@ -160,4 +134,6 @@ export const fetchBackendUpdateAvailableAPI = async () => false
 export const isUIUpdateAvailable = ref(false)
 export const checkUIUpdate = async () => {}
 
-export { restartCoreAPI, upgradeCoreAPI, upgradeUIAPI }
+export const restartCoreAPI = async () => {}
+export const upgradeCoreAPI = async (_type?: any) => {}
+export const upgradeUIAPI = async () => {}

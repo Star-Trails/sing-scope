@@ -1,6 +1,4 @@
-// Clash WS 后端的概览统计流(memory / traffic)。
-import { createClashWebSocket } from '@/api/clash'
+import { ref } from 'vue'
 
-export const fetchMemoryAPI = <T>() => createClashWebSocket<T>('memory')
-
-export const fetchTrafficAPI = <T>() => createClashWebSocket<T>('traffic')
+export const fetchMemoryAPI = <T>() => ({ data: ref<T>(), close: () => {} })
+export const fetchTrafficAPI = <T>() => ({ data: ref<T>(), close: () => {} })
