@@ -1,9 +1,9 @@
-// sing-box API 后端的代理组装逻辑: 100% 通过 Wails v3 Go Backend (AppService) 管理出站组与测速
 import { disconnectByIdAPI } from '@/assembly/connections'
 import { getConnectionChains } from '@/helper'
 import { activeConnections } from '@/store/connections'
 import { automaticDisconnection, iconReflectList } from '@/store/settings'
 import type { Proxy } from '@/types'
+import { Backend } from '@/utils/backend'
 import { proxyGroupList, proxyMap, proxyProviederList } from './index'
 
 const getHistoryFromItem = (item: any): Proxy['history'] =>
@@ -79,32 +79,24 @@ export const resetProxies = () => {
 }
 
 export const fetchProxies = async () => {
-  const appService = (window as any).go?.app?.AppService
-  if (appService?.GetGroups) {
-    try {
-      const gList = await appService.GetGroups()
-      groups = new Map()
-      for (const g of gList || []) {
-        groups.set(g.tag, g)
-      }
-      rebuild()
-      return
-    } catch {
-      // ignore
+  try {
+    const gList = await Backend.getGroups()
+    groups = new Map()
+    for (const g of gList || []) {
+      groups.set(g.tag, g)
     }
+  } catch {
+    // ignore
   }
   rebuild()
 }
 
 export const handlerProxySelect = async (proxyGroupName: string, proxyName: string) => {
-  const appService = (window as any).go?.app?.AppService
-  if (appService?.SelectOutbound) {
-    await appService.SelectOutbound(proxyGroupName, proxyName)
-    const group = groups.get(proxyGroupName)
-    if (group) {
-      group.selected = proxyName
-      rebuild()
-    }
+  await Backend.selectOutbound(proxyGroupName, proxyName)
+  const group = groups.get(proxyGroupName)
+  if (group) {
+    group.selected = proxyName
+    rebuild()
   }
 
   if (automaticDisconnection.value) {
@@ -115,11 +107,8 @@ export const handlerProxySelect = async (proxyGroupName: string, proxyName: stri
 }
 
 const runURLTest = async (outboundTag: string) => {
-  const appService = (window as any).go?.app?.AppService
-  if (appService?.URLTest) {
-    await appService.URLTest(outboundTag)
-    await fetchProxies()
-  }
+  await Backend.urlTest(outboundTag)
+  await fetchProxies()
 }
 
 export const proxyLatencyTest = async (

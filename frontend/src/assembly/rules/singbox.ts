@@ -1,4 +1,5 @@
 import type { Rule } from '@/types'
+import { Backend } from '@/utils/backend'
 import { ruleProviderList, rules } from './index'
 
 const DEFAULT_SINGBOX_RULES = [
@@ -10,29 +11,26 @@ const DEFAULT_SINGBOX_RULES = [
 ]
 
 export const fetchRules = async () => {
-  const appService = (window as any).go?.app?.AppService
-  if (appService?.GetRules) {
-    try {
-      const rList = await appService.GetRules()
-      if (rList && rList.length > 0) {
-        rules.value = rList.map((r: any, idx: number) => ({
-          type: r.type || 'Match',
-          payload: r.payload || 'default',
-          proxy: r.proxy || 'direct',
-          size: r.hitCount || 0,
-          uuid: r.uuid || `rule-${idx + 1}`,
-          index: r.index || idx + 1,
-          extra: {
-            hitCount: r.hitCount || 0,
-            hitAt: r.lastHitAt > 0 ? new Date(r.lastHitAt).toISOString() : new Date().toISOString(),
-          },
-        })) as Rule[]
-        ruleProviderList.value = []
-        return
-      }
-    } catch {
-      // ignore
+  try {
+    const rList = await Backend.getRules()
+    if (rList && rList.length > 0) {
+      rules.value = rList.map((r, idx) => ({
+        type: r.type || 'Match',
+        payload: r.payload || 'default',
+        proxy: r.proxy || 'direct',
+        size: r.hitCount || 0,
+        uuid: r.uuid || `rule-${idx + 1}`,
+        index: r.index || idx + 1,
+        extra: {
+          hitCount: r.hitCount || 0,
+          hitAt: r.lastHitAt > 0 ? new Date(r.lastHitAt).toISOString() : new Date().toISOString(),
+        },
+      })) as Rule[]
+      ruleProviderList.value = []
+      return
     }
+  } catch {
+    // ignore
   }
 
   rules.value = DEFAULT_SINGBOX_RULES.map((r) => ({ ...r })) as Rule[]

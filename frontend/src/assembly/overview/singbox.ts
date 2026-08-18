@@ -1,4 +1,4 @@
-// sing-box 后端的概览统计组装: 100% 通过 Wails v3 Go Backend (AppService) 获取实时状态
+import { Backend } from '@/utils/backend'
 import { ref, watch, type Ref } from 'vue'
 
 export interface SingboxStream<T> {
@@ -23,24 +23,21 @@ const closeSharedStatusStream = () => {
 const ensureSharedStatusStream = () => {
   if (pollTimer) return true
 
-  const appService = (window as any).go?.app?.AppService
   const poll = async () => {
     try {
-      if (appService?.GetSystemStatus) {
-        const [sys, ov] = await Promise.all([
-          appService.GetSystemStatus(),
-          appService.GetOverviewSummary ? appService.GetOverviewSummary('') : null,
-        ])
-        latestStatus = {
-          memory: BigInt(sys?.memory || 0),
-          goroutines: sys?.goroutines || 0,
-          downlink: BigInt(Math.round(ov?.downloadRate || sys?.downlink || 0)),
-          uplink: BigInt(Math.round(ov?.uploadRate || sys?.uplink || 0)),
-          downlinkTotal: BigInt(ov?.sessionDownload || sys?.downlinkTotal || 0),
-          uplinkTotal: BigInt(ov?.sessionUpload || sys?.uplinkTotal || 0),
-        }
-        statusListeners.forEach((listener) => listener(latestStatus))
+      const [sys, ov] = await Promise.all([
+        Backend.getSystemStatus(),
+        Backend.getOverviewSummary(''),
+      ])
+      latestStatus = {
+        memory: BigInt(sys.memory || 0),
+        goroutines: sys.goroutines || 0,
+        downlink: BigInt(Math.round(ov.downloadRate || sys.downlink || 0)),
+        uplink: BigInt(Math.round(ov.uploadRate || sys.uplink || 0)),
+        downlinkTotal: BigInt(ov.sessionDownload || sys.downlinkTotal || 0),
+        uplinkTotal: BigInt(ov.sessionUpload || sys.uplinkTotal || 0),
       }
+      statusListeners.forEach((listener) => listener(latestStatus))
     } catch {
       // ignore
     }
@@ -91,5 +88,4 @@ const createSingboxStat = <T>(kind: 'memory' | 'traffic'): SingboxStream<T> => {
 }
 
 export const fetchMemoryAPI = <T>() => createSingboxStat<T>('memory')
-
 export const fetchTrafficAPI = <T>() => createSingboxStat<T>('traffic')

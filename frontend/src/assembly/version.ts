@@ -1,11 +1,11 @@
-// 组装层 · 版本与状态。
-// 100% 通过 Wails v3 Go Backend (AppService) 同步获取。
+// 组装层 · 版本与状态: 100% 通过 Wails v3 Go Backend (AppService) 同步获取
 import HonkLogo from '@/assets/images/honk.svg'
 import MetacubexLogo from '@/assets/images/metacubex.jpg'
 import SingBoxLogo from '@/assets/images/sing-box.svg'
 import { MIHOMO, MIHOMO_CHANNEL } from '@/constant'
 import { activeBackend } from '@/store/setup'
 import type { Backend } from '@/types'
+import { Backend as GoBackend } from '@/utils/backend'
 import { computed, nextTick, ref } from 'vue'
 import { apiVersion, can, core, Core, resetCore } from './backend'
 
@@ -61,34 +61,26 @@ export const mihomo = computed<[MIHOMO, string] | undefined>(() => {
 })
 
 const fetchSingboxVersion = async () => {
-  const appService = (window as any).go?.app?.AppService
-  if (appService?.GetConnectionInfo) {
-    try {
-      const info = await appService.GetConnectionInfo()
-      apiVersion.value = info.apiVersion || 4
-      const v = info.singBoxVersion ? `sing-box ${info.singBoxVersion}` : 'sing-box 1.14'
-      return { data: { version: v } }
-    } catch {
-      // fallback
-    }
+  try {
+    const info = await GoBackend.getConnectionInfo()
+    apiVersion.value = info.apiVersion || 4
+    const v = info.singBoxVersion ? `sing-box ${info.singBoxVersion}` : 'sing-box 1.14'
+    return { data: { version: v } }
+  } catch {
+    apiVersion.value = 4
+    return { data: { version: 'sing-box 1.14' } }
   }
-  apiVersion.value = 4
-  return { data: { version: 'sing-box 1.14' } }
 }
 
 export const fetchVersionAPI = () => fetchSingboxVersion()
 
 const fetchSingboxStartedAt = async (): Promise<number> => {
-  const appService = (window as any).go?.app?.AppService
-  if (appService?.GetStartedAt) {
-    try {
-      const ts = await appService.GetStartedAt()
-      return Number(ts || 0)
-    } catch {
-      return 0
-    }
+  try {
+    const ts = await GoBackend.getStartedAt()
+    return Number(ts || 0)
+  } catch {
+    return 0
   }
-  return 0
 }
 
 const probeBackend = async (backend: Backend) => {
@@ -135,5 +127,5 @@ export const isUIUpdateAvailable = ref(false)
 export const checkUIUpdate = async () => {}
 
 export const restartCoreAPI = async () => {}
-export const upgradeCoreAPI = async (_type?: any) => {}
+export const upgradeCoreAPI = async (_type?: unknown) => {}
 export const upgradeUIAPI = async () => {}
