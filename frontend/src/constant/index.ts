@@ -118,33 +118,31 @@ export enum PROXY_TAB_TYPE {
   PROXIES = 'proxies',
   PROVIDER = 'proxyProvider',
 }
-
-export enum SORT_TYPE {
-  HOST = 'host',
-  CHAINS = 'chains',
-  RULE = 'rule',
-  TYPE = 'type',
-  CONNECT_TIME = 'connectTime',
-  DOWNLOAD = 'download',
-  DOWNLOAD_SPEED = 'downloadSpeed',
-  UPLOAD = 'upload',
-  UPLOAD_SPEED = 'uploadSpeed',
-  SOURCE_IP = 'sourceIP',
-  INBOUND_USER = 'inboundUser',
-}
-
 export enum SORT_DIRECTION {
   ASC = 'asc',
   DESC = 'desc',
+}
+
+export enum SORT_TYPE {
+  HOST = 'host',
+  PROCESS = 'process',
+  CHAINS = 'chains',
+  RULE = 'rule',
+  TYPE = 'type',
+  DOWNLOAD = 'download',
+  DOWNLOAD_SPEED = 'dlSpeed',
+  UPLOAD = 'upload',
+  UPLOAD_SPEED = 'ulSpeed',
+  SOURCE_IP = 'sourceIP',
+  CONNECT_TIME = 'connectTime',
+  INBOUND_USER = 'inboundUser',
 }
 
 export enum CONNECTION_TAB_TYPE {
   ACTIVE = 'activeConnections',
   CLOSED = 'closedConnections',
   ALL = 'allConnections',
-  PROCESS = 'processConnections',
 }
-
 export enum LOG_LEVEL {
   Trace = 'trace',
   Debug = 'debug',
@@ -224,10 +222,10 @@ export const SIMPLE_CARD_STYLE = [
     CONNECTIONS_TABLE_ACCESSOR_KEY.Close,
   ],
 ]
-
 export const DETAILED_CARD_STYLE = [
   [CONNECTIONS_TABLE_ACCESSOR_KEY.Host, CONNECTIONS_TABLE_ACCESSOR_KEY.ConnectTime],
   [
+    CONNECTIONS_TABLE_ACCESSOR_KEY.Process,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Type,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Download,
     CONNECTIONS_TABLE_ACCESSOR_KEY.Upload,
@@ -238,7 +236,6 @@ export const DETAILED_CARD_STYLE = [
     CONNECTIONS_TABLE_ACCESSOR_KEY.Close,
   ],
 ]
-
 export const ALL_THEME = [
   'light',
   'dark',

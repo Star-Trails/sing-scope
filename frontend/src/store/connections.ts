@@ -129,6 +129,7 @@ const isDesc = computed(() => {
 // 排序键提取器:每条连接每拍只算一次键,替代在 O(N log N) 次比较里反复构串/建 dayjs。
 const sortKeyFunctionMap: Record<SORT_TYPE, (connection: Connection) => string | number> = {
   [SORT_TYPE.HOST]: getHostFromConnection,
+  [SORT_TYPE.PROCESS]: getProcessFromConnection,
   [SORT_TYPE.RULE]: getConnectionRule,
   [SORT_TYPE.CHAINS]: getChainsStringFromConnection,
   [SORT_TYPE.DOWNLOAD]: getConnectionDownload,
@@ -138,14 +139,11 @@ const sortKeyFunctionMap: Record<SORT_TYPE, (connection: Connection) => string |
   [SORT_TYPE.SOURCE_IP]: getConnectionSourceIP,
   [SORT_TYPE.TYPE]: getNetworkTypeFromConnection,
   [SORT_TYPE.CONNECT_TIME]: (connection) => {
-    // clash 的 start 是 ISO 串,sing-box 已是数值时间戳
     const start = getConnectionStart(connection)
-
     if (typeof start === 'number') {
       return start
     }
     const parsed = Date.parse(start)
-
     return Number.isNaN(parsed) ? 0 : parsed
   },
   [SORT_TYPE.INBOUND_USER]: getInboundUserFromConnection,
@@ -157,14 +155,6 @@ export const connections = computed(() => {
       return activeConnections.value
     case CONNECTION_TAB_TYPE.CLOSED:
       return closedConnections.value
-    case CONNECTION_TAB_TYPE.PROCESS: {
-      const all = activeConnections.value.concat(closedConnections.value)
-      return all.slice().sort((a, b) => {
-        const pa = getProcessFromConnection(a)
-        const pb = getProcessFromConnection(b)
-        return pa.localeCompare(pb)
-      })
-    }
     default:
       return closedConnections.value.concat(activeConnections.value)
   }

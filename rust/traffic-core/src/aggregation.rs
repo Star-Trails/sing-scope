@@ -217,16 +217,38 @@ pub fn analyze_batch(req: BatchAnalysisRequest) -> BatchAnalysisResult {
 
         // Process
         let (pname, ppath, pid) = match &flow.process {
-            Some(p) => (
-                if p.process_name.is_empty() {
-                    "Unknown".to_string()
-                } else {
+            Some(p) => {
+                let mut name = if !p.process_name.is_empty() && p.process_name != "Unknown" {
                     p.process_name.clone()
-                },
-                p.process_path.clone(),
-                p.process_id,
-            ),
-            None => ("Unknown".to_string(), String::new(), 0),
+                } else if !p.process_path.is_empty() {
+                    let normalized = p.process_path.replace('\\', "/");
+                    let clean = normalized.trim_start_matches(':');
+                    let base = clean.split('/').last().unwrap_or(clean);
+                    if base.is_empty() { String::new() } else { base.to_string() }
+                } else if let Some(first_pkg) = p.package_names.as_ref().and_then(|pkgs| pkgs.first()) {
+                    first_pkg.clone()
+                } else if p.process_id > 0 {
+                    format!("PID:{}", p.process_id)
+                } else {
+                    String::new()
+                };
+                if name.is_empty() {
+                    name = if !flow.inbound.is_empty() {
+                        flow.inbound.clone()
+                    } else {
+                        "Unknown".to_string()
+                    };
+                }
+                (name, p.process_path.clone(), p.process_id)
+            }
+            None => {
+                let fallback = if !flow.inbound.is_empty() {
+                    flow.inbound.clone()
+                } else {
+                    "Unknown".to_string()
+                };
+                (fallback, String::new(), 0)
+            }
         };
 
         let proc_entry = process_map.entry(pname.clone()).or_insert_with(|| ProcessAcc {

@@ -2,11 +2,13 @@ package analytics
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 	"time"
 
 	"sing-scope/internal/domain"
 	"sing-scope/internal/ffi"
+	"sing-scope/internal/singboxapi"
 	"sing-scope/internal/store"
 )
 
@@ -207,17 +209,25 @@ func (s *Service) analyzeBatchPureGo(flows []*domain.Flow, filter string, topN i
 			entry.DownloadTotal += f.DownloadTotal
 			entry.TotalBytes += totalBytes
 		}
-
 		// Process
 		pName := "Unknown"
 		pPath := ""
 		var pID uint32
 		if f.Process != nil {
-			if f.Process.ProcessName != "" {
+			if f.Process.ProcessName != "" && f.Process.ProcessName != "Unknown" {
 				pName = f.Process.ProcessName
+			} else if f.Process.ProcessPath != "" {
+				pName = singboxapi.ExtractProcessName(f.Process.ProcessPath, f.Process.PackageNames)
+			} else if len(f.Process.PackageNames) > 0 {
+				pName = f.Process.PackageNames[0]
+			} else if f.Process.ProcessID > 0 {
+				pName = fmt.Sprintf("PID:%d", f.Process.ProcessID)
 			}
 			pPath = f.Process.ProcessPath
 			pID = f.Process.ProcessID
+		}
+		if pName == "Unknown" && f.Inbound != "" {
+			pName = f.Inbound
 		}
 
 		pEntry, ok := procMap[pName]
