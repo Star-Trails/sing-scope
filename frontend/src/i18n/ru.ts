@@ -197,6 +197,7 @@ const ru: LANG_MESSAGE = {
   activeConnections: 'Активные',
   closedConnections: 'Закрытые',
   allConnections: 'Все',
+  processConnections: 'Процессы',
   logLevel: 'Уровень журнала',
   logType: 'Тип журнала',
 

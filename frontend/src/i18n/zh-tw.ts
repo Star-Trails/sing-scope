@@ -196,6 +196,7 @@ const zhTW: LANG_MESSAGE = {
   activeConnections: '活躍',
   closedConnections: '已關閉',
   allConnections: '全部',
+  processConnections: '進程',
   logLevel: '日誌等級',
   logType: '日誌類型',
 

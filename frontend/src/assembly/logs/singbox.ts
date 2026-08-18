@@ -9,16 +9,30 @@ export const subscribeLogs = (
   onBatch: (batch: Log[]) => void,
 ): LogsSubscription => {
   let timer: number | null = null
+  const seenMessages = new Set<string>()
 
   const poll = async () => {
     try {
-      const logs = await Backend.getLogs(50)
-      if (logs && logs.length) {
-        const batch: Log[] = logs.map((l) => ({
-          type: l.level ? (l.level.toLowerCase() as LOG_LEVEL) : LOG_LEVEL.Info,
-          payload: l.message || '',
-        }))
-        onBatch(batch)
+      const logs = await Backend.getLogs(200)
+      if (logs && logs.length > 0) {
+        const newLogs: Log[] = []
+        for (const l of logs) {
+          const key = `${l.timestamp || ''}_${l.message || ''}`
+          if (!seenMessages.has(key)) {
+            seenMessages.add(key)
+            if (seenMessages.size > 2000) {
+              const firstKey = seenMessages.values().next().value
+              if (firstKey) seenMessages.delete(firstKey)
+            }
+            newLogs.push({
+              type: l.level ? (l.level.toLowerCase() as LOG_LEVEL) : LOG_LEVEL.Info,
+              payload: l.message || '',
+            })
+          }
+        }
+        if (newLogs.length > 0) {
+          onBatch(newLogs)
+        }
       }
     } catch {
       // ignore
@@ -26,11 +40,12 @@ export const subscribeLogs = (
   }
 
   poll()
-  timer = window.setInterval(poll, 1500)
+  timer = window.setInterval(poll, 1000)
 
   return {
     close: () => {
-      if (timer) clearInterval(timer)
+      clearInterval(timer!)
+      seenMessages.clear()
     },
   }
 }

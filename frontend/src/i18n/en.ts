@@ -195,6 +195,7 @@ const en = {
   activeConnections: 'Active',
   closedConnections: 'Closed',
   allConnections: 'All',
+  processConnections: 'Process',
   logLevel: 'Log level',
   logType: 'Log type',
 

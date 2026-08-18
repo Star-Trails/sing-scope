@@ -1,6 +1,7 @@
 package singboxapi
 
 import (
+	"fmt"
 	"path"
 	"strings"
 	"time"
@@ -9,18 +10,25 @@ import (
 	pb "sing-scope/internal/singboxapi/gen"
 )
 
-// ExtractProcessName extracts a clean executable filename from a Windows or Unix process path.
-func ExtractProcessName(processPath string) string {
-	if processPath == "" {
-		return "Unknown"
-	}
-	// Normalize Windows backslashes
-	normalized := strings.ReplaceAll(processPath, "\\", "/")
-	base := path.Base(normalized)
-	if base == "." || base == "/" || base == "" {
+// ExtractProcessName extracts a clean executable filename from a Windows or Unix process path or package names.
+func ExtractProcessName(processPath string, packageNames []string) string {
+	if processPath != "" {
+		// Strip leading special characters like ":System" or ":System Idle Process"
+		if strings.HasPrefix(processPath, ":") {
+			return strings.TrimPrefix(processPath, ":")
+		}
+		// Normalize Windows backslashes and POSIX slashes
+		normalized := strings.ReplaceAll(processPath, "\\", "/")
+		base := path.Base(normalized)
+		if base != "." && base != "/" && base != "" {
+			return base
+		}
 		return processPath
 	}
-	return base
+	if len(packageNames) > 0 && packageNames[0] != "" {
+		return packageNames[0]
+	}
+	return ""
 }
 
 // NormalizeProcessInfo converts protobuf ProcessInfo to domain ProcessInfo.
@@ -28,13 +36,22 @@ func NormalizeProcessInfo(proto *pb.ProcessInfo) *domain.ProcessInfo {
 	if proto == nil {
 		return nil
 	}
+	pPath := proto.GetProcessPath()
+	pkgNames := proto.GetPackageNames()
+	pName := ExtractProcessName(pPath, pkgNames)
+	if pName == "" && proto.GetProcessId() > 0 {
+		pName = fmt.Sprintf("PID:%d", proto.GetProcessId())
+	}
+	if pName == "" {
+		pName = "Unknown"
+	}
 	return &domain.ProcessInfo{
 		ProcessID:    proto.GetProcessId(),
 		UserID:       proto.GetUserId(),
 		UserName:     proto.GetUserName(),
-		ProcessPath:  proto.GetProcessPath(),
-		ProcessName:  ExtractProcessName(proto.GetProcessPath()),
-		PackageNames: proto.GetPackageNames(),
+		ProcessPath:  pPath,
+		ProcessName:  pName,
+		PackageNames: pkgNames,
 	}
 }
 

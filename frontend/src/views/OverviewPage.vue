@@ -21,7 +21,6 @@ import OverviewPieDistributionCard from '@/components/overview/OverviewPieDistri
 import ConnectionHistory from '@/components/overview/ConnectionHistory.vue'
 import NetworkCard from '@/components/overview/NetworkCard.vue'
 import ProviderTrafficOverview from '@/components/overview/ProviderTrafficOverview.vue'
-import RuleHitCountCard from '@/components/overview/RuleHitCountCard.vue'
 import TopologyCharts from '@/components/overview/TopologyCharts.vue'
 import { usePaddingForViews } from '@/composables/paddingViews'
 import { overviewCardOrder } from '@/store/settings'
@@ -38,7 +37,6 @@ const cardComponents: Record<string, Component> = {
   OverviewPieDistributionCard,
   TopologyCharts,
   NetworkCard,
-  RuleHitCountCard,
   ConnectionHistory,
   ProviderTrafficOverview,
 }

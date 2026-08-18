@@ -196,6 +196,7 @@ const zh: LANG_MESSAGE = {
   activeConnections: '活跃',
   closedConnections: '已关闭',
   allConnections: '全部',
+  processConnections: '进程',
   logLevel: '日志等级',
   logType: '日志类型',
 

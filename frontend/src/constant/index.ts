@@ -142,6 +142,7 @@ export enum CONNECTION_TAB_TYPE {
   ACTIVE = 'activeConnections',
   CLOSED = 'closedConnections',
   ALL = 'allConnections',
+  PROCESS = 'processConnections',
 }
 
 export enum LOG_LEVEL {
@@ -327,7 +328,6 @@ export enum OVERVIEW_CARD {
   NetworkCard = 'NetworkCard',
   ConnectionHistory = 'ConnectionHistory',
   ProviderTrafficOverview = 'ProviderTrafficOverview',
-  RuleHitCountCard = 'RuleHitCountCard',
   EarthGlobeCard = 'EarthGlobeCard',
 }
 

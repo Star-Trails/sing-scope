@@ -46,6 +46,12 @@ func NewAppService() *AppService {
 		maxLogs:          500,
 	}
 
+	svc.logs = append(svc.logs, domain.LogMessage{
+		Level:     domain.LogLevelInfo,
+		Message:   "sing-scope Desktop Analyzer initialized. Ready for sing-box 1.14+ gRPC events.",
+		Timestamp: time.Now(),
+	})
+
 	mgr := singboxapi.NewManager(
 		singboxapi.ClientOptions{
 			ServerURL: "http://127.0.0.1:9090",
@@ -54,7 +60,26 @@ func NewAppService() *AppService {
 		},
 		singboxapi.DefaultReconnectOptions(),
 		func(info *domain.ServerConnectionInfo) {
-			// Callback on state change
+			svc.mu.Lock()
+			if info.State == domain.StateConnected {
+				svc.logs = append(svc.logs, domain.LogMessage{
+					Level:     domain.LogLevelInfo,
+					Message:   fmt.Sprintf("[sing-box gRPC] Connected successfully (version: %s, apiVersion: %d)", info.SingBoxVersion, info.APIVersion),
+					Timestamp: time.Now(),
+				})
+			} else if info.State == domain.StateReconnecting {
+				svc.logs = append(svc.logs, domain.LogMessage{
+					Level:     domain.LogLevelWarn,
+					Message:   "[sing-box gRPC] Connection interrupted, attempting auto-reconnect...",
+					Timestamp: time.Now(),
+				})
+			} else if info.State == domain.StateError {
+				svc.logs = append(svc.logs, domain.LogMessage{
+					Level:     domain.LogLevelError,
+					Timestamp: time.Now(),
+				})
+			}
+			svc.mu.Unlock()
 		},
 		func(events []domain.FlowEvent, isReset bool) {
 			connStore.ProcessBatch(events, isReset)

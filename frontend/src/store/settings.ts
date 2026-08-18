@@ -203,10 +203,6 @@ const defaultOverviewCardOrder: { card: OVERVIEW_CARD; visible: boolean }[] = [
     visible: true,
   },
   {
-    card: OVERVIEW_CARD.RuleHitCountCard,
-    visible: true,
-  },
-  {
     card: OVERVIEW_CARD.EarthGlobeCard,
     visible: false,
   },

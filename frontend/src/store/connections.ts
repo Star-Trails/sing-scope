@@ -15,6 +15,7 @@ import {
   getHostFromConnection,
   getInboundUserFromConnection,
   getNetworkTypeFromConnection,
+  getProcessFromConnection,
 } from '@/helper'
 import { toSearchRegex } from '@/helper/search'
 import type { Connection } from '@/types'
@@ -156,7 +157,14 @@ export const connections = computed(() => {
       return activeConnections.value
     case CONNECTION_TAB_TYPE.CLOSED:
       return closedConnections.value
-    // 全部:两个数组天然不相交(closed 是「上一拍存在、这一拍消失」的连接),无需去重。
+    case CONNECTION_TAB_TYPE.PROCESS: {
+      const all = activeConnections.value.concat(closedConnections.value)
+      return all.slice().sort((a, b) => {
+        const pa = getProcessFromConnection(a)
+        const pb = getProcessFromConnection(b)
+        return pa.localeCompare(pb)
+      })
+    }
     default:
       return closedConnections.value.concat(activeConnections.value)
   }
