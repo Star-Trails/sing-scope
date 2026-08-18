@@ -226,9 +226,6 @@ func (s *Service) analyzeBatchPureGo(flows []*domain.Flow, filter string, topN i
 			pPath = f.Process.ProcessPath
 			pID = f.Process.ProcessID
 		}
-		if pName == "Unknown" && f.Inbound != "" {
-			pName = f.Inbound
-		}
 
 		pEntry, ok := procMap[pName]
 		if !ok {

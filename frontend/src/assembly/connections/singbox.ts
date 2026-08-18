@@ -131,10 +131,7 @@ export const connectionAccessor: ConnectionAccessor = {
   rulePayload: () => '',
   sourceIP: (connection) => {
     const c = asSingbox(connection)
-    const proc = c.processInfo?.processPath ? c.processInfo.processPath.replace(/^.*[/\\](.*)$/, '$1') : ''
-    if (proc) return proc
-    if (c.user) return c.user
-    return splitHostPort(c.source)[0] || c.inbound || '-'
+    return splitHostPort(c.source)[0] || '-'
   },
   sourcePort: (connection) => splitHostPort(asSingbox(connection).source)[1],
   network: (connection) => getNetwork(asSingbox(connection)),

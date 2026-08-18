@@ -537,8 +537,6 @@ func (s *ConnectionStore) GetOverviewSummary() domain.OverviewSummary {
 			pName = f.Process.ProcessName
 		} else if f.Process != nil && f.Process.ProcessPath != "" {
 			pName = f.Process.ProcessPath
-		} else if f.Inbound != "" {
-			pName = f.Inbound
 		}
 		if agg, ok := processBytes[pName]; ok {
 			agg.TotalBytes += total

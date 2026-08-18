@@ -37,7 +37,7 @@ watch(supportedLogLevels, (levels) => {
   if (cancel) initLogs()
 })
 
-const backend = () => (channel.value === Channel.Singbox ? singbox : clash)
+const backend = () => singbox
 
 let cancel: (() => void) | undefined
 

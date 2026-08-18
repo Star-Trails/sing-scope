@@ -233,22 +233,11 @@ pub fn analyze_batch(req: BatchAnalysisRequest) -> BatchAnalysisResult {
                     String::new()
                 };
                 if name.is_empty() {
-                    name = if !flow.inbound.is_empty() {
-                        flow.inbound.clone()
-                    } else {
-                        "Unknown".to_string()
-                    };
+                    name = "Unknown".to_string();
                 }
                 (name, p.process_path.clone(), p.process_id)
             }
-            None => {
-                let fallback = if !flow.inbound.is_empty() {
-                    flow.inbound.clone()
-                } else {
-                    "Unknown".to_string()
-                };
-                (fallback, String::new(), 0)
-            }
+            None => ("Unknown".to_string(), String::new(), 0),
         };
 
         let proc_entry = process_map.entry(pname.clone()).or_insert_with(|| ProcessAcc {

@@ -15,9 +15,7 @@ export enum Core {
   Unknown = 'unknown',
 }
 
-export const channel = computed<Channel>(() =>
-  activeBackend.value?.type === 'singbox' ? Channel.Singbox : Channel.Clash,
-)
+export const channel = computed<Channel>(() => Channel.Singbox)
 
 export const core = ref<Core>(Core.Singbox)
 export const apiVersion = ref(4)
