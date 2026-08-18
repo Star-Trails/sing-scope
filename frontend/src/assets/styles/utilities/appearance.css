@@ -1,0 +1,65 @@
+/*
+ * 用户可调外观：背景不透明度与毛玻璃强度。
+ */
+
+@for $i from 0 to 100 {
+  .custom-background.custom-background-$(i) {
+    .bg-base-100,
+    .card,
+    .collapse,
+    .input,
+    .select,
+    .toggle,
+    .settings-menu,
+    .ctrls-bar,
+    .settings-grid,
+    .base-container,
+    .btn:not(.btn-ghost, .btn-neutral, .btn-primary),
+    .tabs {
+      background-color: color-mix(in srgb, var(--color-base-100) $(i)%, transparent);
+    }
+
+    .btn.btn-neutral {
+      background-color: color-mix(in srgb, var(--color-neutral) $(i)%, transparent);
+    }
+
+    .bg-base-150,
+    .bg-base-200,
+    .dock {
+      background-color: color-mix(in srgb, var(--color-base-200) $(i)%, transparent);
+    }
+
+    .modal-box {
+      background-color: color-mix(in srgb, var(--color-base-100) $(i)%, transparent);
+    }
+
+    .home-page.bg-base-200 {
+      background-color: transparent;
+    }
+  }
+}
+
+/* 毛玻璃强度 */
+@for $i from 0 to 40 {
+  .blur-intensity-$(i) {
+    .card,
+    .collapse,
+    .sidebar,
+    .nav-bar,
+    .modal-box,
+    .need-blur,
+    .settings-grid,
+    .base-container,
+    .btn,
+    .table thead {
+      backdrop-filter: blur($(i)px);
+      -webkit-backdrop-filter: blur($(i)px);
+    }
+
+    .pinned-td {
+      background-color: transparent !important;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+  }
+}

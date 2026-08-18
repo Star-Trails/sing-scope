@@ -1,0 +1,19 @@
+/*
+ * 项目自定义设计令牌：在 daisyUI 主题预设之上补充的、所有主题共享的值。
+ */
+
+:root,
+[data-theme] {
+  --color-base-150: color-mix(in srgb, var(--color-base-100) 50%, var(--color-base-200));
+  --color-base-border: color-mix(in srgb, var(--color-base-content) 8%, transparent);
+
+  --radius-field: 0.625rem;
+  --radius-selector: 0.5rem;
+}
+
+[data-theme='light-neutral'],
+[data-theme='dark-neutral'] {
+  --color-low-latency: #22c55e;
+  --color-medium-latency: #eab308;
+  --color-high-latency: #ef4444;
+}

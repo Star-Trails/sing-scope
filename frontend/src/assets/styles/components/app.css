@@ -1,0 +1,50 @@
+/*
+ * 项目自有组件：不属于 daisyUI 也不属于第三方库的类。
+ */
+
+/* ---------- 通用容器 ---------- */
+
+.base-container {
+  @apply bg-base-100 border border-base-200/80 overflow-hidden rounded-xl shadow-sm;
+}
+
+/* ---------- 底部 dock ---------- */
+
+.dock {
+  @apply absolute right-2 left-2 z-30 rounded-3xl;
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--color-base-content) 12%, transparent);
+  box-shadow:
+    0 4px 16px color-mix(in srgb, var(--color-base-content) 6%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 35%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, white 6%, transparent);
+}
+
+/* ---------- 侧栏 ---------- */
+
+.sidebar-route-menu > li > a:hover,
+.sidebar-route-menu > li > a:active,
+.sidebar-route-menu > li > a:focus-visible {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+/* ---------- 设置页 ---------- */
+
+.settings-section-label {
+  @apply px-1 pt-5 pb-2 text-xs tracking-wider uppercase first:pt-2 font-bold;
+  color: color-mix(in srgb, var(--color-base-content) 50%, transparent);
+}
+.settings-grid {
+  @apply bg-base-100 border border-base-200/80 grid grid-cols-1 overflow-hidden rounded-xl shadow-sm;
+}
+.setting-item {
+  @apply border-base-200 flex min-h-11 items-center gap-3 border-b px-4;
+}
+.setting-item:last-child {
+  border-bottom: none;
+}
+.setting-item .setting-item-label {
+  @apply shrink-0 grow text-sm font-medium;
+}

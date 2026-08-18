@@ -1,0 +1,46 @@
+@import './styles/theme/setup.css';
+@import './styles/theme/fonts.css';
+@import './styles/theme/presets.css';
+@import './styles/theme/tokens.css';
+
+@import './styles/base/elements.css';
+
+@import './styles/components/daisyui.css';
+@import './styles/components/app.css';
+@import './styles/components/tooltip.css';
+
+@import './styles/utilities/appearance.css';
+@import './styles/utilities/motion.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Immersive Floating Overlay Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(150, 150, 150, 0.25) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.25) !important;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.5) !important;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+}

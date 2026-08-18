@@ -1,0 +1,72 @@
+/*
+ * daisyUI 组件的项目级覆写
+ */
+
+/* ---------- 容器 ---------- */
+
+.card {
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-base-content, #000) 10%, transparent);
+}
+
+.collapse {
+  border-radius: 0.75rem;
+}
+
+.collapse.transparent-collapse {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* ---------- 表单控件 ---------- */
+
+.select {
+  width: auto;
+  appearance: none;
+}
+
+.input,
+.select,
+.textarea {
+  transition: all 0.2s ease-out;
+  border: 1px solid color-mix(in srgb, var(--color-base-content, #000) 25%, transparent) !important;
+  background-color: var(--color-base-100, #ffffff);
+  color: var(--color-base-content, #1f2937);
+  border-radius: 0.5rem;
+}
+
+.input:focus,
+.input:focus-within,
+.select:focus,
+.select:focus-within,
+.textarea:focus,
+.textarea:focus-within {
+  border-color: var(--color-primary, #3b82f6) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary, #3b82f6) 25%, transparent);
+  outline: none;
+}
+
+/* ---------- 按钮与导航 ---------- */
+
+.btn {
+  border-radius: 0.5rem;
+}
+
+.tabs .tab.tab-active {
+  background-color: var(--color-primary, #3b82f6);
+  color: var(--color-primary-content, #ffffff);
+}
+
+/* ---------- 表格与弹层 ---------- */
+
+.table {
+  border-separate: 0;
+  border-spacing: 0;
+}
+
+.modal-box {
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-base-content, #000) 15%, transparent);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}

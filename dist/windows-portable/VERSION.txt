@@ -1,0 +1,6 @@
+sing-scope Traffic Analyzer v0.1.0
+Target Platform: Windows x86_64 (amd64)
+sing-box API Target: v1.14.0+ (StartedService API v4)
+Built: 2026-08-17
+Architecture: Go + Wails v3 + Vite + Vue 3 + TypeScript + Bun + Rust
+Upstream Commit: c82b9b8dc92e1495968a1e0835644e4ad6fc303b

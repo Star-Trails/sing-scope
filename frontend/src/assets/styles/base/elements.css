@@ -1,0 +1,13 @@
+/*
+ * 元素级与全局的基础样式。
+ */
+
+.text-main {
+  color: var(--color-base-content, #c9d1d9);
+}
+
+.search-highlight {
+  background-color: #facc15;
+  color: #000000;
+  border-radius: 0.125rem;
+}
