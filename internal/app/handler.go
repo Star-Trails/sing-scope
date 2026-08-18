@@ -151,6 +151,12 @@ func NewAssetHandler(svc *AppService, assets fs.FS) http.Handler {
 		ok := svc.URLTest(tag)
 		writeJSON(w, map[string]bool{"ok": ok})
 	})
+	mux.HandleFunc("/api/probe-latency", func(w http.ResponseWriter, r *http.Request) {
+		target := r.URL.Query().Get("target")
+		latency := svc.ProbeLatency(target)
+		writeJSON(w, map[string]int{"latency": latency})
+	})
+
 
 	mux.HandleFunc("/api/clash-mode", func(w http.ResponseWriter, r *http.Request) {
 		st := svc.GetClashModeStatus()

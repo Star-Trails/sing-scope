@@ -3,6 +3,9 @@ package app
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -123,9 +126,13 @@ func (s *AppService) GetBatchAnalytics(inboundFilter string, topN int) analytics
 	}
 	return res
 }
-
-// GetRules returns matched routing rules and hit statistics.
+// GetRules returns matched routing rules and hit statistics from the live rule store.
 func (s *AppService) GetRules() []domain.RuleInfo {
+	disc := s.store.GetDiscoveredRules()
+	if len(disc) > 0 {
+		return disc
+	}
+
 	analyticsRes, err := s.analyticsService.AnalyzeBatch("", 100)
 	if err == nil && len(analyticsRes.ByRule) > 0 {
 		rules := make([]domain.RuleInfo, 0, len(analyticsRes.ByRule))
@@ -144,7 +151,7 @@ func (s *AppService) GetRules() []domain.RuleInfo {
 		return rules
 	}
 
-	defaults := []string{"protocol: dns -> dns-out", "ip_is_private -> direct", "geosite -> proxy", "geoip -> direct", "final -> proxy"}
+	defaults := []string{"protocol: dns -> dns-out", "ip_is_private -> direct", "geosite(category-games) -> proxy", "geoip(cn) -> direct", "final -> proxy"}
 	rules := make([]domain.RuleInfo, 0, len(defaults))
 	for i, d := range defaults {
 		parts := strings.Split(d, " -> ")
@@ -165,6 +172,66 @@ func (s *AppService) GetRules() []domain.RuleInfo {
 		})
 	}
 	return rules
+}
+
+// ProbeLatency measures the live HTTP/TCP round-trip latency to a target in ms.
+func (s *AppService) ProbeLatency(target string) int {
+	var targetURL string
+	switch strings.ToLower(target) {
+	case "baidu":
+		targetURL = "http://www.baidu.com"
+	case "cloudflare":
+		targetURL = "http://1.1.1.1"
+	case "github":
+		targetURL = "https://github.com"
+	case "youtube":
+		targetURL = "https://www.youtube.com"
+	default:
+		if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
+			targetURL = target
+		} else {
+			targetURL = "http://" + target
+		}
+	}
+
+	client := &http.Client{
+		Timeout: 2 * time.Second,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	}
+
+	start := time.Now()
+	resp, err := client.Head(targetURL)
+	if err != nil {
+		u, errParse := url.Parse(targetURL)
+		if errParse != nil {
+			return 0
+		}
+		host := u.Hostname()
+		port := u.Port()
+		if port == "" {
+			if u.Scheme == "https" {
+				port = "443"
+			} else {
+				port = "80"
+			}
+		}
+		tcpStart := time.Now()
+		conn, errDial := net.DialTimeout("tcp", net.JoinHostPort(host, port), 1500*time.Millisecond)
+		if errDial != nil {
+			return 0
+		}
+		_ = conn.Close()
+		return int(time.Since(tcpStart).Milliseconds())
+	}
+	defer resp.Body.Close()
+
+	latency := int(time.Since(start).Milliseconds())
+	if latency <= 0 {
+		latency = 1
+	}
+	return latency
 }
 
 // GetSystemStatus returns the latest sing-box process metrics (memory, goroutines).

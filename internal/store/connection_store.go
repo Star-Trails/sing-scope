@@ -1,6 +1,8 @@
 package store
 
 import (
+	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +36,9 @@ type ConnectionStore struct {
 	// Historical (closed) flows in insertion order (ring buffer bounded)
 	closedHistory []*domain.Flow
 	historyIndex  int
+
+	// Discovered and matched routing rules
+	rules map[string]*domain.RuleInfo
 
 	// Session-level accumulators
 	sessionUploadBytes   int64
@@ -71,6 +76,7 @@ func NewConnectionStore(opts StoreOptions) *ConnectionStore {
 		opts:                opts,
 		activeFlows:         make(map[string]*domain.Flow),
 		closedHistory:       make([]*domain.Flow, 0, 1024),
+		rules:               make(map[string]*domain.RuleInfo),
 		timeSeries:          make([]domain.TimeSeriesPoint, 0, opts.MaxTimeSeriesPts),
 		inbounds:            make(map[string]string),
 		outbounds:           make(map[string]string),
@@ -150,8 +156,9 @@ func (s *ConnectionStore) ProcessBatch(events []domain.FlowEvent, isReset bool) 
 					s.protocols[flow.Protocol] = true
 				}
 
+				s.recordRule(flow, now)
+
 				if flow.ClosedAt != nil {
-					// Closed connection in initial snapshot
 					flow.IsActive = false
 					s.appendHistory(flow)
 				} else {
@@ -174,6 +181,8 @@ func (s *ConnectionStore) ProcessBatch(events []domain.FlowEvent, isReset bool) 
 
 				flow.LastActiveAt = now
 
+				s.recordRule(flow, now)
+
 				batchUploadDelta += event.UplinkDelta
 				batchDownloadDelta += event.DownlinkDelta
 			}
@@ -192,10 +201,12 @@ func (s *ConnectionStore) ProcessBatch(events []domain.FlowEvent, isReset bool) 
 				flow.DownloadRate = 0
 				flow.UploadDelta = 0
 				flow.DownloadDelta = 0
+				s.recordRule(flow, now)
 				s.appendHistory(flow)
 			} else if event.Flow != nil {
 				flow := event.Flow
 				flow.IsActive = false
+				s.recordRule(flow, now)
 				s.appendHistory(flow)
 			}
 		}
@@ -229,9 +240,50 @@ func (s *ConnectionStore) ProcessBatch(events []domain.FlowEvent, isReset bool) 
 	}
 }
 
+func (s *ConnectionStore) recordRule(flow *domain.Flow, now time.Time) {
+	if flow == nil || flow.Rule == "" {
+		return
+	}
+	r, exists := s.rules[flow.Rule]
+	if !exists {
+		rType := "Match"
+		if strings.HasPrefix(flow.Rule, "geosite") {
+			rType = "Geosite"
+		} else if strings.HasPrefix(flow.Rule, "geoip") {
+			rType = "GeoIP"
+		} else if strings.HasPrefix(flow.Rule, "protocol") {
+			rType = "Protocol"
+		} else if strings.HasPrefix(flow.Rule, "rule_set") {
+			rType = "RuleSet"
+		} else if strings.HasPrefix(flow.Rule, "domain") {
+			rType = "Domain"
+		} else if strings.HasPrefix(flow.Rule, "ip") {
+			rType = "IP"
+		} else if flow.Rule == "final" || flow.Rule == "default" {
+			rType = "Default"
+		}
+		r = &domain.RuleInfo{
+			Type:       rType,
+			Payload:    flow.Rule,
+			Proxy:      flow.Outbound,
+			HitCount:   0,
+			TotalBytes: 0,
+			LastHitAt:  now.UnixMilli(),
+			UUID:       fmt.Sprintf("rule-%d", len(s.rules)+1),
+			Index:      len(s.rules) + 1,
+		}
+		s.rules[flow.Rule] = r
+	}
+	r.HitCount++
+	r.TotalBytes += flow.UploadTotal + flow.DownloadTotal
+	r.LastHitAt = now.UnixMilli()
+	if flow.Outbound != "" {
+		r.Proxy = flow.Outbound
+	}
+}
+
 func (s *ConnectionStore) appendHistory(flow *domain.Flow) {
 	if len(s.closedHistory) >= s.opts.MaxHistorySize {
-		// Evict oldest (shift)
 		s.closedHistory = append(s.closedHistory[1:], flow)
 	} else {
 		s.closedHistory = append(s.closedHistory, flow)
@@ -255,18 +307,18 @@ func MatchesInboundFilter(flow *domain.Flow, filter string) bool {
 
 // QueryOptions represents query parameters for retrieving flows.
 type QueryOptions struct {
-	Search      string `json:"search"`
-	Process     string `json:"process"`
-	Inbound     string `json:"inbound"`
-	Outbound    string `json:"outbound"`
-	Protocol    string `json:"protocol"`
-	Network     string `json:"network"`
-	ActiveOnly  bool   `json:"activeOnly"`
-	TUNOnly     bool   `json:"tunOnly"`
-	Limit       int    `json:"limit"`
-	Offset      int    `json:"offset"`
-	SortBy      string `json:"sortBy"`      // "uploadRate", "downloadRate", "uploadTotal", "downloadTotal", "createdAt", "duration"
-	SortDesc    bool   `json:"sortDesc"`
+	Search     string `json:"search"`
+	Process    string `json:"process"`
+	Inbound    string `json:"inbound"`
+	Outbound   string `json:"outbound"`
+	Protocol   string `json:"protocol"`
+	Network    string `json:"network"`
+	ActiveOnly bool   `json:"activeOnly"`
+	TUNOnly    bool   `json:"tunOnly"`
+	Limit      int    `json:"limit"`
+	Offset     int    `json:"offset"`
+	SortBy     string `json:"sortBy"`
+	SortDesc   bool   `json:"sortDesc"`
 }
 
 // FlowListResult contains paginated query results.
@@ -288,11 +340,8 @@ func (s *ConnectionStore) GetFlows(opts QueryOptions) FlowListResult {
 	}
 
 	searchLower := strings.ToLower(opts.Search)
-
-	// Collect candidate flows
 	candidates := make([]*domain.Flow, 0, len(s.activeFlows)+len(s.closedHistory))
 
-	// Active flows first
 	for _, f := range s.activeFlows {
 		if !MatchesInboundFilter(f, inboundFilter) {
 			continue
@@ -316,7 +365,6 @@ func (s *ConnectionStore) GetFlows(opts QueryOptions) FlowListResult {
 	}
 
 	if !opts.ActiveOnly {
-		// Include closed history (reverse order: newest closed first)
 		for i := len(s.closedHistory) - 1; i >= 0; i-- {
 			f := s.closedHistory[i]
 			if !MatchesInboundFilter(f, inboundFilter) {
@@ -342,11 +390,8 @@ func (s *ConnectionStore) GetFlows(opts QueryOptions) FlowListResult {
 	}
 
 	totalCount := len(candidates)
-
-	// Sort candidates if requested
 	sortFlows(candidates, opts.SortBy, opts.SortDesc)
 
-	// Pagination
 	start := opts.Offset
 	if start < 0 {
 		start = 0
@@ -396,8 +441,6 @@ func sortFlows(flows []*domain.Flow, sortBy string, sortDesc bool) {
 	if len(flows) <= 1 || sortBy == "" {
 		return
 	}
-	// Stable in-place sort using Go standard library or insertion/quick
-	// Using standard slice sorting
 	var less func(i, j int) bool
 	switch sortBy {
 	case "uploadRate":
@@ -431,7 +474,6 @@ func sortFlows(flows []*domain.Flow, sortBy string, sortDesc bool) {
 		return
 	}
 
-	// QuickSort with direction
 	quickSort(flows, 0, len(flows)-1, less, sortDesc)
 }
 
@@ -568,7 +610,6 @@ func (s *ConnectionStore) GetOverviewSummary() domain.OverviewSummary {
 	topDest := findMaxAggregate(destBytes)
 	topOutbound := findMaxAggregate(outboundBytes)
 
-	// Copy time series slice
 	tsCopy := make([]domain.TimeSeriesPoint, len(s.timeSeries))
 	copy(tsCopy, s.timeSeries)
 
@@ -599,6 +640,23 @@ func findMaxAggregate(m map[string]*domain.NamedAggregate) *domain.NamedAggregat
 		}
 	}
 	return maxAgg
+}
+
+// GetDiscoveredRules returns all rules discovered from live connections.
+func (s *ConnectionStore) GetDiscoveredRules() []domain.RuleInfo {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	res := make([]domain.RuleInfo, 0, len(s.rules))
+	for _, r := range s.rules {
+		res = append(res, *r)
+	}
+
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].HitCount > res[j].HitCount
+	})
+
+	return res
 }
 
 // GetMetadataCatalogs returns the list of known inbounds, outbounds, processes, and protocols.

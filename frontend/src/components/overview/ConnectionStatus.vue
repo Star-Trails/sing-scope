@@ -60,25 +60,22 @@ import {
   githubLatency,
   youtubeLatency,
 } from '@/composables/overview'
-
-const getBaiduLatencyAPI = async () => 0
-const getCloudflareLatencyAPI = async () => 0
-const getGithubLatencyAPI = async () => 0
-const getYouTubeLatencyAPI = async () => 0
+import { Backend } from '@/utils/backend'
 import { getColorForLatency } from '@/helper'
 import { autoConnectionCheck } from '@/store/settings'
 import { BoltIcon } from '@heroicons/vue/24/outline'
 import { computed, onMounted, ref } from 'vue'
 import LatencyChart from './LatencyChart.vue'
 
-const ROUNDS = 10
+const ROUNDS = 6
 
 const targets = [
-  { name: 'Baidu', ref: baiduLatency, api: getBaiduLatencyAPI },
-  { name: 'Cloudflare', ref: cloudflareLatency, api: getCloudflareLatencyAPI },
-  { name: 'GitHub', ref: githubLatency, api: getGithubLatencyAPI },
-  { name: 'YouTube', ref: youtubeLatency, api: getYouTubeLatencyAPI },
+  { name: 'Baidu', ref: baiduLatency, api: () => Backend.probeLatency('baidu') },
+  { name: 'Cloudflare', ref: cloudflareLatency, api: () => Backend.probeLatency('cloudflare') },
+  { name: 'GitHub', ref: githubLatency, api: () => Backend.probeLatency('github') },
+  { name: 'YouTube', ref: youtubeLatency, api: () => Backend.probeLatency('youtube') },
 ]
+
 
 const isTesting = ref(false)
 

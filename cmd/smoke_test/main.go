@@ -372,6 +372,10 @@ func main() {
 	testEndpoint(ts.URL+"/api/url-test?tag=Proxy", "POST", nil, func(body []byte) {
 		assertContains(body, `"ok":true`, "URLTest response")
 	})
+	testEndpoint(ts.URL+"/api/probe-latency?target=baidu", "GET", nil, func(body []byte) {
+		assertContains(body, `"latency":`, "ProbeLatency response")
+	})
+
 
 	// 5. Test Frontend Asset SPA Fallback
 	fmt.Println("[5/6] Testing Frontend SPA Asset delivery:")

@@ -181,4 +181,9 @@ export const Backend = {
     const res = await apiGet<{ startedAt: number }>('started-at')
     return res?.startedAt || 0
   },
+
+  async probeLatency(target: string): Promise<number> {
+    const res = await apiGet<{ latency: number }>(`probe-latency?target=${encodeURIComponent(target)}`)
+    return res?.latency || 0
+  },
 }
