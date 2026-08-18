@@ -192,10 +192,13 @@ async function fetchData() {
 
     if (analytics) {
       if (analytics.byProcess && analytics.byProcess.length > 0) {
-        processData.value = analytics.byProcess.map((p) => ({
-          name: p.processName || 'Unknown',
+        const valid = analytics.byProcess.filter((p) => p.processName && p.processName !== 'Unknown')
+        processData.value = valid.map((p) => ({
+          name: p.processName,
           value: p.totalBytes || p.uploadTotal + p.downloadTotal,
         }))
+      } else {
+        processData.value = []
       }
       if (analytics.byDomain && analytics.byDomain.length > 0) {
         destData.value = analytics.byDomain.map((d) => ({
