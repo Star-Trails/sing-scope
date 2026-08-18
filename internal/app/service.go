@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -45,7 +47,7 @@ func NewAppService() *AppService {
 		singboxapi.ClientOptions{
 			ServerURL: "http://127.0.0.1:9090",
 			Secret:    "",
-			Timeout:   5 * time.Second,
+			Timeout:   2 * time.Second,
 		},
 		singboxapi.DefaultReconnectOptions(),
 		func(info *domain.ServerConnectionInfo) {
@@ -122,6 +124,49 @@ func (s *AppService) GetBatchAnalytics(inboundFilter string, topN int) analytics
 	return res
 }
 
+// GetRules returns matched routing rules and hit statistics.
+func (s *AppService) GetRules() []domain.RuleInfo {
+	analyticsRes, err := s.analyticsService.AnalyzeBatch("", 100)
+	if err == nil && len(analyticsRes.ByRule) > 0 {
+		rules := make([]domain.RuleInfo, 0, len(analyticsRes.ByRule))
+		for i, r := range analyticsRes.ByRule {
+			rules = append(rules, domain.RuleInfo{
+				Type:       "Match",
+				Payload:    r.Name,
+				Proxy:      r.Category,
+				HitCount:   r.ConnectionCount,
+				TotalBytes: r.TotalBytes,
+				LastHitAt:  r.LastActiveAt,
+				UUID:       fmt.Sprintf("rule-%d", i+1),
+				Index:      i + 1,
+			})
+		}
+		return rules
+	}
+
+	defaults := []string{"protocol: dns -> dns-out", "ip_is_private -> direct", "geosite -> proxy", "geoip -> direct", "final -> proxy"}
+	rules := make([]domain.RuleInfo, 0, len(defaults))
+	for i, d := range defaults {
+		parts := strings.Split(d, " -> ")
+		payload := parts[0]
+		proxy := "direct"
+		if len(parts) > 1 {
+			proxy = parts[1]
+		}
+		rules = append(rules, domain.RuleInfo{
+			Type:       "Rule",
+			Payload:    payload,
+			Proxy:      proxy,
+			HitCount:   0,
+			TotalBytes: 0,
+			LastHitAt:  0,
+			UUID:       fmt.Sprintf("rule-%d", i+1),
+			Index:      i + 1,
+		})
+	}
+	return rules
+}
+
 // GetSystemStatus returns the latest sing-box process metrics (memory, goroutines).
 func (s *AppService) GetSystemStatus() domain.SystemStatus {
 	s.mu.RLock()
@@ -148,6 +193,14 @@ func (s *AppService) GetLogs(limit int) []domain.LogMessage {
 	return res
 }
 
+// ClearLogs clears the local log buffer.
+func (s *AppService) ClearLogs() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.logs = make([]domain.LogMessage, 0, s.maxLogs)
+	return true
+}
+
 // GetGroups returns current outbound selector groups.
 func (s *AppService) GetGroups() []domain.OutboundGroup {
 	s.mu.RLock()
@@ -172,6 +225,7 @@ func (s *AppService) CloseAllConnections() bool {
 	err := s.manager.CloseAllConnections(ctx)
 	return err == nil
 }
+
 // SelectOutbound switches the selected node in an outbound selector group.
 func (s *AppService) SelectOutbound(groupTag, outboundTag string) bool {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -192,6 +246,11 @@ func (s *AppService) URLTest(outboundTag string) bool {
 func (s *AppService) SetInboundFilter(filter string) bool {
 	s.store.SetInboundFilter(filter)
 	return true
+}
+
+// GetInboundFilter returns the active inbound filter.
+func (s *AppService) GetInboundFilter() string {
+	return s.store.GetInboundFilter()
 }
 
 // Close cleans up background loops and active streams.
