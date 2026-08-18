@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative h-48 w-full overflow-hidden xl:h-64"
+    class="relative h-56 w-full overflow-hidden xl:h-64"
     data-page-swipe-ignore
   >
     <div
@@ -81,11 +81,11 @@ const options = computed<EChartOption>(() => {
       },
     },
     grid: {
-      left: '2%',
-      right: '2%',
-      top: '10%',
-      bottom: '5%',
-      containLabel: false,
+      left: '16px',
+      right: '16px',
+      top: '24px',
+      bottom: '12px',
+      containLabel: true,
     },
     xAxis: {
       type: 'category',
@@ -95,6 +95,8 @@ const options = computed<EChartOption>(() => {
       axisLabel: {
         color: colors.baseContent,
         fontFamily: fontFamily.value,
+        interval: 0,
+        fontSize: 11,
       },
     },
     yAxis: {
