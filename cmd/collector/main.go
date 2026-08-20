@@ -55,10 +55,10 @@ func main() {
 				switch e.Type {
 				case domain.FlowEventNew:
 					if e.Flow != nil {
-						fmt.Printf("[NEW] Flow %s: %s://%s -> %s (inbound: %s/%s, outbound: %s/%s, process: %s)\n",
+						fmt.Printf("[NEW] Flow %s: %s://%s -> %s (inbound: %s/%s, outbound: %s/%s, domain: %s)\n",
 							e.Flow.ID[:8], e.Flow.Network, e.Flow.Source, e.Flow.Destination,
 							e.Flow.Inbound, e.Flow.InboundType, e.Flow.Outbound, e.Flow.OutboundType,
-							getProcessName(e.Flow.Process))
+							e.Flow.Domain)
 					}
 				case domain.FlowEventUpdate:
 					fmt.Printf("[UPDATE] Flow %s: ▲ +%s (up) | ▼ +%s (down)\n",
@@ -105,12 +105,6 @@ func main() {
 	}
 }
 
-func getProcessName(p *domain.ProcessInfo) string {
-	if p == nil || p.ProcessName == "" {
-		return "Unknown"
-	}
-	return p.ProcessName
-}
 
 func formatBytes(bytes int64) string {
 	const unit = 1024

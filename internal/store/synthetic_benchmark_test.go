@@ -141,10 +141,6 @@ func generateSyntheticEvents(count int) []domain.FlowEvent {
 			OutboundType:  "vless",
 			UploadTotal:   int64(i * 100),
 			DownloadTotal: int64(i * 500),
-			Process: &domain.ProcessInfo{
-				ProcessName: fmt.Sprintf("app-%d.exe", i%20),
-				ProcessPath: fmt.Sprintf("C:\\App\\app-%d.exe", i%20),
-			},
 			CreatedAt: now,
 			IsActive:  true,
 		}

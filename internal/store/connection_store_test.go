@@ -21,9 +21,6 @@ func TestConnectionStore_Lifecycle(t *testing.T) {
 		Destination: "1.1.1.1:443",
 		Domain:      "cloudflare.com",
 		Outbound:    "proxy-hk",
-		Process: &domain.ProcessInfo{
-			ProcessName: "chrome.exe",
-		},
 		CreatedAt: time.Now(),
 		IsActive:  true,
 	}
@@ -184,9 +181,6 @@ func TestConnectionStore_OverviewSummary(t *testing.T) {
 			OutboundType:  "shadowsocks",
 			UploadTotal:   int64(i * 100),
 			DownloadTotal: int64(i * 500),
-			Process: &domain.ProcessInfo{
-				ProcessName: fmt.Sprintf("proc-%d.exe", i%2),
-			},
 			CreatedAt: time.Now(),
 			IsActive:  true,
 		}
@@ -199,7 +193,7 @@ func TestConnectionStore_OverviewSummary(t *testing.T) {
 	if summary.ActiveTUNFlows != 10 {
 		t.Errorf("expected 10 active TUN flows, got %d", summary.ActiveTUNFlows)
 	}
-	if summary.TopProcess == nil || summary.TopProcess.Name != "proc-1.exe" {
-		t.Errorf("expected TopProcess proc-1.exe, got %+v", summary.TopProcess)
+	if summary.TopOutbound == nil || summary.TopOutbound.Name != "node-1" {
+		t.Errorf("expected TopOutbound node-1, got %+v", summary.TopOutbound)
 	}
 }

@@ -8,26 +8,6 @@ import (
 	pb "sing-scope/internal/singboxapi/gen"
 )
 
-func TestExtractProcessName(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"", "Unknown"},
-		{"/usr/bin/curl", "curl"},
-		{"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "Google Chrome"},
-		{`C:\Program Files\sing-box\sing-box.exe`, "sing-box.exe"},
-		{`C:\Users\Admin\AppData\Local\Discord\app-1.0.9000\Discord.exe`, "Discord.exe"},
-		{"node", "node"},
-	}
-
-	for _, tc := range tests {
-		got := ExtractProcessName(tc.input)
-		if got != tc.expected {
-			t.Errorf("ExtractProcessName(%q) = %q, expected %q", tc.input, got, tc.expected)
-		}
-	}
-}
 
 func TestNormalizeConnection(t *testing.T) {
 	nowMs := time.Now().UnixMilli()
@@ -50,10 +30,6 @@ func TestNormalizeConnection(t *testing.T) {
 		Rule:         "match-all",
 		Outbound:     "direct",
 		OutboundType: "direct",
-		ProcessInfo: &pb.ProcessInfo{
-			ProcessId:   1234,
-			ProcessPath: `C:\Windows\System32\curl.exe`,
-		},
 	}
 
 	flow := NormalizeConnection(pbConn)
@@ -69,9 +45,6 @@ func TestNormalizeConnection(t *testing.T) {
 	}
 	if flow.UploadTotal != 10240 || flow.DownloadTotal != 40960 {
 		t.Errorf("unexpected totals: up=%d, down=%d", flow.UploadTotal, flow.DownloadTotal)
-	}
-	if flow.Process == nil || flow.Process.ProcessName != "curl.exe" {
-		t.Errorf("expected process name 'curl.exe', got %+v", flow.Process)
 	}
 	if !flow.IsActive {
 		t.Error("expected flow to be active")

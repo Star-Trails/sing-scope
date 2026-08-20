@@ -240,3 +240,40 @@ pub fn analyze_batch(req: BatchAnalysisRequest) -> BatchAnalysisResult {
         compute_time_us,
     }
 }
+
+pub fn downsample_timeseries(points: &[TimeSeriesPoint], target_buckets: usize) -> Vec<TimeSeriesPoint> {
+    if points.is_empty() || target_buckets == 0 {
+        return Vec::new();
+    }
+    if points.len() <= target_buckets {
+        return points.to_vec();
+    }
+
+    let chunk_size = points.len() as f64 / target_buckets as f64;
+    let mut result = Vec::with_capacity(target_buckets);
+
+    for i in 0..target_buckets {
+        let start_idx = (i as f64 * chunk_size).floor() as usize;
+        let end_idx = (((i + 1) as f64 * chunk_size).floor() as usize).min(points.len());
+        let slice = &points[start_idx..end_idx];
+
+        if slice.is_empty() {
+            continue;
+        }
+
+        let count = slice.len() as f64;
+        let sum_up: f64 = slice.iter().map(|p| p.upload_rate).sum();
+        let sum_down: f64 = slice.iter().map(|p| p.download_rate).sum();
+        let sum_flows: usize = slice.iter().map(|p| p.active_flows).sum();
+        let mid_ts = slice[slice.len() / 2].timestamp;
+
+        result.push(TimeSeriesPoint {
+            timestamp: mid_ts,
+            upload_rate: sum_up / count,
+            download_rate: sum_down / count,
+            active_flows: (sum_flows as f64 / count).round() as usize,
+        });
+    }
+
+    result
+}

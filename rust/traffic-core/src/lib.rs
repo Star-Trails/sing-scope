@@ -72,8 +72,8 @@ mod tests {
         assert_eq!(result.active_flows, 1);
         assert_eq!(result.total_upload_bytes, 1000);
         assert_eq!(result.total_download_bytes, 5000);
-        assert_eq!(result.by_process.len(), 1);
-        assert_eq!(result.by_process[0].process_name, "curl");
+        assert_eq!(result.by_domain.len(), 1);
+        assert_eq!(result.by_domain[0].name, "cloudflare.com");
     }
 
     #[test]
