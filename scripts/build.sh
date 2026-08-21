@@ -20,4 +20,9 @@ mkdir -p "${ROOT_DIR}/dist/windows-portable"
 # Compile native Wails v3 GUI binary
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-H windowsgui -s -w" -o "${ROOT_DIR}/dist/windows-portable/TrafficAnalyzer.exe" ./cmd/app
 
+echo "==> Packaging portable zip archive..."
+if command -v zip >/dev/null 2>&1; then
+    (cd "${ROOT_DIR}/dist/windows-portable" && zip -r -q "${ROOT_DIR}/dist/TrafficAnalyzer-windows-amd64-portable.zip" .)
+fi
+
 echo "==> Build complete: ${ROOT_DIR}/dist/windows-portable/TrafficAnalyzer.exe"

@@ -22,4 +22,7 @@ if (-not (Test-Path "dist/windows-portable")) {
 $env:CGO_ENABLED = "0"
 go build -ldflags="-H windowsgui -s -w" -o "$RootDir/dist/windows-portable/TrafficAnalyzer.exe" ./cmd/app
 
+
+Write-Host "==> Packaging portable zip archive..." -ForegroundColor Cyan
+Compress-Archive -Path "$RootDir/dist/windows-portable/*" -DestinationPath "$RootDir/dist/TrafficAnalyzer-windows-amd64-portable.zip" -Force
 Write-Host "==> Build complete: $RootDir/dist/windows-portable/TrafficAnalyzer.exe" -ForegroundColor Green
